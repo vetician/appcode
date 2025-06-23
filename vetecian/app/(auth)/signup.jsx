@@ -76,7 +76,7 @@ export default function SignUp() {
         Alert.alert(
           'Account Created',
           'Your account has been created successfully!',
-          [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
+          [{ text: 'OK', onPress: () => router.replace('/pet_detail') }]
         );
       }
     } catch (error) {

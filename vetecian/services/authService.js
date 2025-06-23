@@ -1,6 +1,6 @@
 // Real API service for authentication with Express/MongoDB backend
 
-const API_BASE_URL = 'http://192.168.101.7:3000/api'; // Update this to your backend URL
+const API_BASE_URL = 'http://192.168.101.2:3000/api'; // Update this to your backend URL
 
 // Helper function to handle API responses
 const handleResponse = async (response) => {
@@ -52,6 +52,14 @@ export const authAPI = {
     return await apiRequest('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ name, email, password }),
+    });
+  },
+  
+  // Parent register
+  parent: async (name, email, phone, address) => {
+    return await apiRequest('/auth/parent-register', {
+      method: 'POST',
+      body: JSON.stringify({ name, email, phone, address }),
     });
   },
 

@@ -7,7 +7,7 @@ import authSlice from './slices/authSlice';
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['auth'], // Only persist auth state
+  whitelist: ['auth'],
 };
 
 const rootReducer = combineReducers({

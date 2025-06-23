@@ -6,6 +6,7 @@ const {
   refreshToken,
   logout,
   logoutAll,
+  registerParent
 } = require('../controllers/authController');
 const { auth } = require('../middleware/auth');
 const { validate } = require('../middleware/validation');
@@ -37,11 +38,27 @@ const loginValidation = [
     .withMessage('Password is required'),
 ];
 
+// const parentRegisterValidation = [
+//   ...registerValidation, // Includes name, email, password from registerValidation
+//   body('phone')
+//     .trim()
+//     .isLength({ min: 10, max: 15 })
+//     .withMessage('Phone must be between 10 and 15 digits')
+//     .isNumeric()
+//     .withMessage('Phone must contain only numbers'),
+//   body('address')
+//     .trim()
+//     .isLength({ min: 10 })
+//     .withMessage('Address must be at least 10 characters long'),
+// ];
+
 // Routes
 router.post('/register', registerValidation, validate, register);
 router.post('/login', loginValidation, validate, login);
+router.post('/parent-register', registerParent);
 router.post('/refresh-token', refreshToken);
 router.post('/logout', auth, logout);
 router.post('/logout-all', auth, logoutAll);
+
 
 module.exports = router;

@@ -26,6 +26,18 @@ export const signUpUser = createAsyncThunk(
   }
 );
 
+export const parentUser = createAsyncThunk(
+  'auth/parent',
+  async ({ name, email, phone, address }, { rejectWithValue }) => {
+    try {
+      const response = await authAPI.parent(name, email, phone, address);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Parent register failed');
+    }
+  }
+);
+
 export const refreshToken = createAsyncThunk(
   'auth/refreshToken',
   async (_, { getState, rejectWithValue }) => {
@@ -73,6 +85,8 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+
+    
       // Sign In
       .addCase(signInUser.pending, (state) => {
         state.isLoading = true;
@@ -91,6 +105,8 @@ const authSlice = createSlice({
         state.error = action.payload;
         state.isAuthenticated = false;
       })
+
+
       // Sign Up
       .addCase(signUpUser.pending, (state) => {
         state.isLoading = true;

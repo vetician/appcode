@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Parent = require('../models/Parent');
 const { AppError } = require('../utils/appError');
 const { catchAsync } = require('../utils/catchAsync');
 
@@ -98,6 +99,39 @@ const login = catchAsync(async (req, res, next) => {
   });
 });
 
+// Register new parent
+const registerParent = catchAsync(async (req, res, next) => {
+  const { name, email, phone, address } = req.body;
+  console.log(req.body)
+
+  // Check if parent already exists
+  const existingParent = await Parent.findByEmail(email);
+  if (existingParent) {
+    return next(new AppError('Parent with this email already exists', 400));
+  }
+
+  // Create new parent  
+  const parent = new Parent({
+    name: name,
+    email: email,
+    phone: phone,
+    address: address,
+  });
+
+  await parent.save();
+
+  // Generate tokens (same as user registration)
+  const { accessToken, refreshToken } = generateTokens(parent._id);
+
+  res.status(201).json({
+    success: true,
+    message: 'Parent registered successfully',
+    parent: parent.getPublicProfile(),
+    token: accessToken,
+    refreshToken,
+  });
+});
+
 // Refresh access token
 const refreshToken = catchAsync(async (req, res, next) => {
   const { refreshToken: token } = req.body;
@@ -170,10 +204,12 @@ const logoutAll = catchAsync(async (req, res, next) => {
   });
 });
 
+
 module.exports = {
   register,
   login,
   refreshToken,
   logout,
   logoutAll,
+  registerParent
 };
