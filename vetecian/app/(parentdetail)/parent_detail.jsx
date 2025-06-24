@@ -67,7 +67,7 @@ export default function PetDetail() {
       setErrors(newErrors);
       return;
     }
-    console.log(formData)
+    // console.log(formData)
 
     try {
       // Here you would typically send the data to your backend
@@ -83,7 +83,7 @@ export default function PetDetail() {
         Alert.alert(
           'Success',
           'Parent information has been saved successfully!',
-          [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
+          [{ text: 'OK', onPress: () => router.replace('/(vetician_tabs)') }]
         );
       }
     } catch (error) {

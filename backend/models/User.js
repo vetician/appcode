@@ -12,7 +12,6 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: [true, 'Email is required'],
-    unique: true,
     lowercase: true,
     trim: true,
     match: [
@@ -25,6 +24,12 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Password is required'],
     minlength: [6, 'Password must be at least 6 characters long'],
     select: false,
+  },
+  role: {
+    type: String,
+    required: [true, 'Role is required'],
+    enum: ['veterinarian', 'vetician'],
+    default: 'vetician'
   },
   phone: {
     type: String,
@@ -61,7 +66,8 @@ const userSchema = new mongoose.Schema({
 });
 
 // Index for better query performance
-userSchema.index({ email: 1 });
+// userSchema.index({ email: 1 });
+userSchema.index({ email: 1, role: 1 }, { unique: true });
 userSchema.index({ createdAt: -1 });
 
 // Hash password before saving
@@ -93,8 +99,14 @@ userSchema.methods.getPublicProfile = function() {
 };
 
 // Static method to find user by email
-userSchema.statics.findByEmail = function(email) {
-  return this.findOne({ email: email.toLowerCase() });
+// userSchema.statics.findByEmail = function(email) {
+//   return this.findOne({ email: email.toLowerCase() });
+// };
+userSchema.statics.findByEmailAndRole = function(email, role) {
+  return this.findOne({ 
+    email: email.toLowerCase(),
+    role 
+  });
 };
 
 // Update last login

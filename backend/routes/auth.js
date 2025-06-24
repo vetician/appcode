@@ -6,9 +6,10 @@ const {
   refreshToken,
   logout,
   logoutAll,
-  registerParent
+  registerParent,
+  createPet
 } = require('../controllers/authController');
-const { auth } = require('../middleware/auth');
+const { auth, protect } = require('../middleware/auth');
 const { validate } = require('../middleware/validation');
 
 const router = express.Router();
@@ -56,6 +57,7 @@ const loginValidation = [
 router.post('/register', registerValidation, validate, register);
 router.post('/login', loginValidation, validate, login);
 router.post('/parent-register', registerParent);
+router.post('/pet-register', createPet);
 router.post('/refresh-token', refreshToken);
 router.post('/logout', auth, logout);
 router.post('/logout-all', auth, logoutAll);

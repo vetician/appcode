@@ -1,8 +1,10 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Parent = require('../models/Parent');
+const Pet = require('../models/Pet');
 const { AppError } = require('../utils/appError');
 const { catchAsync } = require('../utils/catchAsync');
+
 
 // Generate JWT tokens
 const generateTokens = (userId) => {
@@ -23,12 +25,22 @@ const generateTokens = (userId) => {
 
 // Register new user
 const register = catchAsync(async (req, res, next) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, role = 'vetician' } = req.body;
+  console.log(req.body);
+
+    // Validate role
+  if (role && !['veterinarian', 'vetician'].includes(role)) {
+    return next(new AppError('Invalid role specified', 400));
+  }
 
   // Check if user already exists
-  const existingUser = await User.findByEmail(email);
+  const existingUser = await User.findOne({ 
+    email: email.toLowerCase().trim(),
+    role
+  });
+
   if (existingUser) {
-    return next(new AppError('User with this email already exists', 400));
+    return next(new AppError(`User with this email already exists as a ${role}`, 400));
   }
 
   // Create new user
@@ -36,7 +48,9 @@ const register = catchAsync(async (req, res, next) => {
     name: name.trim(),
     email: email.toLowerCase().trim(),
     password,
+    role 
   });
+  console.log(user)
 
   await user.save();
 
@@ -53,7 +67,10 @@ const register = catchAsync(async (req, res, next) => {
   res.status(201).json({
     success: true,
     message: 'User registered successfully',
-    user: user.getPublicProfile(),
+    user: {
+      ...user.getPublicProfile(),
+      role: user.role // Explicitly include role in response
+    },
     token: accessToken,
     refreshToken,
   });
@@ -61,12 +78,18 @@ const register = catchAsync(async (req, res, next) => {
 
 // Login user
 const login = catchAsync(async (req, res, next) => {
-  const { email, password } = req.body;
+  const { email, password, loginType } = req.body;
+  console.log(req.body)
 
   // Find user and include password for comparison
-  const user = await User.findByEmail(email).select('+password');
+  const user = await User.findByEmailAndRole(email, loginType).select('+password');
   if (!user) {
     return next(new AppError('Invalid email or password', 401));
+  }
+
+  // Verify role matches login type (if loginType is provided)
+  if (loginType && user.role !== loginType) {
+    return next(new AppError(`Please login as ${user.role}`, 401));
   }
 
   // Check if user is active
@@ -93,7 +116,10 @@ const login = catchAsync(async (req, res, next) => {
   res.json({
     success: true,
     message: 'Login successful',
-    user: user.getPublicProfile(),
+    user: {
+      ...user.getPublicProfile(),
+      role: user.role // Explicitly include role in response
+    },
     token: accessToken,
     refreshToken,
   });
@@ -132,6 +158,46 @@ const registerParent = catchAsync(async (req, res, next) => {
   });
 });
 
+// Register pet
+const createPet = catchAsync(async (req, res, next) => {
+  const { name, species, gender, userId } = req.body;
+  console.log(req.body);
+
+  // Validate required fields
+  if (!name || !species || !gender) {
+    return next(new AppError('Name, species and gender are required', 400));
+  }
+
+  if (!userId) {
+    return next(new AppError('User ID is required', 400));
+  }
+
+  // Check if pet already exists for this user
+  const existingPet = await Pet.findOne({ name, userId });
+  if (existingPet) {
+    return next(new AppError('A pet with this name already exists for this user', 409));
+  }
+
+  // Create new pet  
+  const pet = new Pet({
+    name,
+    species,
+    gender,
+    userId,
+    ...req.body // Include any additional fields
+  });
+
+  await pet.save();
+
+  console.log(res)
+
+  res.status(201).json({
+    success: true,
+    message: 'Pet created successfully',
+    pet: pet.getBasicInfo()
+  });
+});
+
 // Refresh access token
 const refreshToken = catchAsync(async (req, res, next) => {
   const { refreshToken: token } = req.body;
@@ -143,7 +209,7 @@ const refreshToken = catchAsync(async (req, res, next) => {
   try {
     // Verify refresh token
     const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
-    
+
     // Find user and check if refresh token exists
     const user = await User.findById(decoded.userId);
     if (!user) {
@@ -211,5 +277,6 @@ module.exports = {
   refreshToken,
   logout,
   logoutAll,
-  registerParent
+  registerParent,
+  createPet
 };

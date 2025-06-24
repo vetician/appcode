@@ -11,7 +11,8 @@ export default function SignIn() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
-  
+  const [loginType, setLoginType] = useState('vetician');
+
   const router = useRouter();
   const dispatch = useDispatch();
   const { isLoading, error } = useSelector(state => state.auth);
@@ -19,7 +20,7 @@ export default function SignIn() {
   const handleSignIn = async () => {
     // Reset errors
     setErrors({});
-    
+
     // Validation
     const newErrors = {};
     if (!email.trim()) {
@@ -27,22 +28,23 @@ export default function SignIn() {
     } else if (!validateEmail(email)) {
       newErrors.email = 'Please enter a valid email';
     }
-    
+
     if (!password.trim()) {
       newErrors.password = 'Password is required';
     } else if (password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
     }
-    
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
     try {
-      const result = await dispatch(signInUser({ email, password })).unwrap();
+      console.log('Login Page:=> ', email, password, loginType);
+      const result = await dispatch(signInUser({ email, password, loginType })).unwrap();
       if (result.success) {
-        router.replace('/(tabs)');
+        router.replace(loginType === 'veterinarian' ? '/(doc_tabs)' : '/(vetician_tabs)');
       }
     } catch (error) {
       Alert.alert('Sign In Failed', error || 'An error occurred during sign in');
@@ -50,8 +52,8 @@ export default function SignIn() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.content}>
@@ -107,6 +109,39 @@ export default function SignIn() {
               <Text style={styles.errorText}>{error}</Text>
             </View>
           )}
+
+          <View style={styles.loginTypeContainer}>
+            <View style={styles.loginTypeButtons}>
+              <TouchableOpacity
+                style={[
+                  styles.loginTypeButton,
+                  loginType === 'vetician' && styles.loginTypeButtonActive
+                ]}
+                onPress={() => setLoginType('vetician')}
+              >
+                <Text style={[
+                  styles.loginTypeText,
+                  loginType === 'vetician' && styles.loginTypeTextActive
+                ]}>
+                  Vetician
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.loginTypeButton,
+                  loginType === 'veterinarian' && styles.loginTypeButtonActive
+                ]}
+                onPress={() => setLoginType('veterinarian')}
+              >
+                <Text style={[
+                  styles.loginTypeText,
+                  loginType === 'veterinarian' && styles.loginTypeTextActive
+                ]}>
+                  Veterinarian
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
 
           <TouchableOpacity
             style={[styles.signInButton, isLoading && styles.buttonDisabled]}
@@ -192,6 +227,40 @@ const styles = StyleSheet.create({
     color: '#ff3b30',
     fontSize: 14,
     marginTop: 8,
+  },
+  loginTypeContainer: {
+    marginBottom: 24,
+  },
+  loginTypeLabel: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 8,
+  },
+  loginTypeButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  loginTypeButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  loginTypeButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  loginTypeText: {
+    fontSize: 16,
+    color: '#666',
+  },
+  loginTypeTextActive: {
+    color: '#fff',
+    fontWeight: '600',
   },
   signInButton: {
     backgroundColor: '#007AFF',

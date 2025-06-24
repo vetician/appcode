@@ -16,7 +16,8 @@ export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
-  
+  const [role, setRole] = useState('vetician'); // Default to 'vetician'
+
   const router = useRouter();
   const dispatch = useDispatch();
   const { isLoading, error } = useSelector(state => state.auth);
@@ -32,34 +33,34 @@ export default function SignUp() {
   const handleSignUp = async () => {
     // Reset errors
     setErrors({});
-    
+
     // Validation
     const newErrors = {};
-    
+
     if (!formData.name.trim()) {
       newErrors.name = 'Full name is required';
     } else if (formData.name.trim().length < 2) {
       newErrors.name = 'Name must be at least 2 characters';
     }
-    
+
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!validateEmail(formData.email)) {
       newErrors.email = 'Please enter a valid email';
     }
-    
+
     if (!formData.password.trim()) {
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
     }
-    
+
     if (!formData.confirmPassword.trim()) {
       newErrors.confirmPassword = 'Please confirm your password';
     } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
-    
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -69,14 +70,17 @@ export default function SignUp() {
       const result = await dispatch(signUpUser({
         name: formData.name.trim(),
         email: formData.email.trim(),
-        password: formData.password
+        password: formData.password,
+        role
       })).unwrap();
-      
-      if (result.success) {
+
+      console.log("result : ", result)
+
+      if (result.success && result.user.role == 'vetician') {
         Alert.alert(
           'Account Created',
           'Your account has been created successfully!',
-          [{ text: 'OK', onPress: () => router.replace('/pet_detail') }]
+          [{ text: 'OK', onPress: () => router.replace(role == 'vetician' ? '/parent_detail' : '/(doc_tabs)') }]
         );
       }
     } catch (error) {
@@ -85,8 +89,8 @@ export default function SignUp() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -184,6 +188,27 @@ export default function SignUp() {
               </View>
             )}
 
+            <View style={styles.roleContainer}>
+              <View style={styles.roleButtons}>
+                <TouchableOpacity
+                  style={[styles.roleButton, role === 'vetician' && styles.roleButtonActive]}
+                  onPress={() => setRole('vetician')}
+                >
+                  <Text style={[styles.roleButtonText, role === 'vetician' && styles.roleButtonTextActive]}>
+                    Vetician
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.roleButton, role === 'veterinarian' && styles.roleButtonActive]}
+                  onPress={() => setRole('veterinarian')}
+                >
+                  <Text style={[styles.roleButtonText, role === 'veterinarian' && styles.roleButtonTextActive]}>
+                    Veterinarian
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
             <TouchableOpacity
               style={[styles.signUpButton, isLoading && styles.buttonDisabled]}
               onPress={handleSignUp}
@@ -273,6 +298,40 @@ const styles = StyleSheet.create({
     color: '#ff3b30',
     fontSize: 14,
     marginTop: 8,
+  },
+  roleContainer: {
+    marginBottom: 24,
+  },
+  roleLabel: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 8,
+  },
+  roleButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  roleButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  roleButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  roleButtonText: {
+    fontSize: 16,
+    color: '#666',
+  },
+  roleButtonTextActive: {
+    color: '#fff',
+    fontWeight: '600',
   },
   signUpButton: {
     backgroundColor: '#007AFF',

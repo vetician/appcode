@@ -1,12 +1,14 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { authAPI } from '../../services/authService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Async thunks for authentication
 export const signInUser = createAsyncThunk(
   'auth/signIn',
-  async ({ email, password }, { rejectWithValue }) => {
+  async ({ email, password, loginType }, { rejectWithValue }) => {
     try {
-      const response = await authAPI.signIn(email, password);
+      const response = await authAPI.signIn(email, password, loginType);
+      await AsyncStorage.setItem('userId', response.user._id);
       return response;
     } catch (error) {
       return rejectWithValue(error.message || 'Sign in failed');
@@ -16,9 +18,10 @@ export const signInUser = createAsyncThunk(
 
 export const signUpUser = createAsyncThunk(
   'auth/signUp',
-  async ({ name, email, password }, { rejectWithValue }) => {
+  async ({ name, email, password, role = 'vetician' }, { rejectWithValue }) => {
     try {
-      const response = await authAPI.signUp(name, email, password);
+      const response = await authAPI.signUp(name, email, password, role);
+      await AsyncStorage.setItem('userId', response.user._id);
       return response;
     } catch (error) {
       return rejectWithValue(error.message || 'Sign up failed');
@@ -34,6 +37,44 @@ export const parentUser = createAsyncThunk(
       return response;
     } catch (error) {
       return rejectWithValue(error.message || 'Parent register failed');
+    }
+  }
+);
+
+export const registerPet = createAsyncThunk(
+  'auth/pet',
+  async (petData, { rejectWithValue }) => {
+    try {
+      // Required fields validation
+      if (!petData.name || !petData.species || !petData.gender) {
+        throw new Error('Missing required information');
+      }
+
+      // Validate date format if provided
+      if (petData.dob && !isValidDate(petData.dob)) {
+        throw new Error('Invalid date format. Please use YYYY-MM-DD');
+      }
+
+      // Prepare numeric fields
+      const numericFields = ['height', 'weight'];
+      const processedData = { ...petData };
+
+      numericFields.forEach(field => {
+        if (processedData[field]) {
+          processedData[field] = Number(processedData[field]);
+          if (isNaN(processedData[field])) {
+            throw new Error(`${field} must be a valid number`);
+          }
+        }
+      });
+
+      // console.log(processedData)
+      // Send the complete data to the API
+      // const response = await authAPI.pet(processedData);
+
+      return await authAPI.pet(processedData);;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message || 'Pet registration failed');
     }
   }
 );
@@ -86,7 +127,7 @@ const authSlice = createSlice({
   extraReducers: (builder) => {
     builder
 
-    
+
       // Sign In
       .addCase(signInUser.pending, (state) => {
         state.isLoading = true;
@@ -105,7 +146,6 @@ const authSlice = createSlice({
         state.error = action.payload;
         state.isAuthenticated = false;
       })
-
 
       // Sign Up
       .addCase(signUpUser.pending, (state) => {
@@ -146,6 +186,13 @@ const authSlice = createSlice({
       });
   },
 });
+
+function isValidDate(dateString) {
+  const regEx = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateString.match(regEx)) return false;
+  const d = new Date(dateString);
+  return d instanceof Date && !isNaN(d);
+}
 
 export const { signOut, clearError, updateUser } = authSlice.actions;
 export default authSlice.reducer;

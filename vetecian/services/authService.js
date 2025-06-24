@@ -1,23 +1,25 @@
 // Real API service for authentication with Express/MongoDB backend
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 const API_BASE_URL = 'http://192.168.101.2:3000/api'; // Update this to your backend URL
 
 // Helper function to handle API responses
 const handleResponse = async (response) => {
   const data = await response.json();
   console.log(data)
-  
+
   if (!response.ok) {
     throw new Error(data.message || 'An error occurred');
   }
-  
+
   return data;
 };
 
 // Helper function to make API requests
 const apiRequest = async (endpoint, options = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
-  
+
   const config = {
     headers: {
       'Content-Type': 'application/json',
@@ -40,27 +42,55 @@ const apiRequest = async (endpoint, options = {}) => {
 
 export const authAPI = {
   // Sign In
-  signIn: async (email, password) => {
+  signIn: async (email, password, loginType) => {
     return await apiRequest('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, loginType }),
     });
   },
 
   // Sign Up
-  signUp: async (name, email, password) => {
+  signUp: async (name, email, password, role = 'user') => {
     return await apiRequest('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ name, email, password, role }),
     });
   },
-  
+
   // Parent register
   parent: async (name, email, phone, address) => {
     return await apiRequest('/auth/parent-register', {
       method: 'POST',
       body: JSON.stringify({ name, email, phone, address }),
     });
+  },
+
+  // Pet register
+  pet: async ({ name, species, gender, dob, additionalData }) => {
+    try {
+      // Get the userId from AsyncStorage
+      const userId = await AsyncStorage.getItem('userId');
+
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+
+      // console.log(name, species, gender, dob)
+      return await apiRequest('/auth/pet-register', {
+        method: 'POST',
+        body: JSON.stringify({
+          name,
+          species,
+          gender,
+          dob,
+          userId: userId, // Explicitly include user ID in the body if needed
+          ...additionalData,
+        }),
+      });
+    } catch (error) {
+      console.error('Error in pet registration:', error);
+      throw error; // Re-throw the error for handling in the calling function
+    }
   },
 
   // Refresh Token

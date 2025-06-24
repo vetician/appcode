@@ -23,7 +23,8 @@ export default function RootLayout() {
       <PersistGate loading={<LoadingScreen />} persistor={persistor}>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="(vetician_tabs)" />
+          <Stack.Screen name="(doc_tabs)" />
           <Stack.Screen name="+not-found" />
         </Stack>
         <StatusBar style="auto" />
