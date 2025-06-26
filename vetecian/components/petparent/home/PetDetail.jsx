@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { DrawerActions } from '@react-navigation/native';
 import { useNavigation } from '@react-navigation/native';
 import { Menu } from 'lucide-react-native';
-import { registerPet } from '../../store/slices/authSlice';
+import { registerPet } from '../../../store/slices/authSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 

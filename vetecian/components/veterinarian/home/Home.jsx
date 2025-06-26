@@ -1,36 +1,12 @@
-// import React from 'react';
-// import { createDrawerNavigator } from '@react-navigation/drawer';
-// import Home from '../../components/home/Home';
-// import PetDetail from '../../components/home/PetDetail';
-
-// const Drawer = createDrawerNavigator();
-
-// export default function AppDrawer() {
-//   return (
-//     <Drawer.Navigator initialRouteName="Home">
-//       <Drawer.Screen 
-//         name="Home" 
-//         component={Home} 
-//         options={{ headerShown: false, title: 'Dassboard' }}
-//       />
-//       <Drawer.Screen 
-//         name="PetDetail" 
-//         component={PetDetail} 
-//         options={{ headerShown: false, title: 'Pet Details' }}
-//       />
-//     </Drawer.Navigator>
-//   );
-// }
-
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useSelector } from 'react-redux';
-import { HeartPulse, PawPrint, Stethoscope, Syringe, CalendarClock } from 'lucide-react-native';
-// import { DrawerActions } from '@react-navigation/native';
-// import { useNavigation } from '@react-navigation/native';
+import { HeartPulse, PawPrint, Stethoscope, Syringe, CalendarClock, Menu } from 'lucide-react-native';
+import { DrawerActions } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 
 export default function Home() {
     const { user } = useSelector(state => state.auth);
-    // const navigation = useNavigation();
+    const navigation = useNavigation();
 
     const stats = [
         { icon: HeartPulse, label: 'Patients', value: '24', color: '#34C759' },
@@ -38,16 +14,16 @@ export default function Home() {
         { icon: Stethoscope, label: 'Surgeries', value: '3', color: '#007AFF' },
     ];
 
-    // const openDrawer = () => {
-    //     navigation.dispatch(DrawerActions.openDrawer());
-    // };
+    const openDrawer = () => {
+        navigation.dispatch(DrawerActions.openDrawer());
+    };
 
     return (
         <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
             <View style={styles.header}>
-                {/* <TouchableOpacity onPress={openDrawer} style={styles.menuButton}>
+                <TouchableOpacity onPress={openDrawer} style={styles.menuButton}>
                     <Menu size={24} color="#1a1a1a" />
-                </TouchableOpacity> */}
+                </TouchableOpacity>
                 <View>
                     <Text style={styles.greeting}>Hello, Dr. {user?.name || 'Veterinarian'}!</Text>
                     <Text style={styles.subtitle}>Welcome to your veterinary dashboard</Text>

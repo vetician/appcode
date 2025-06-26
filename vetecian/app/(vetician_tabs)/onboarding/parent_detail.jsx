@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { React, useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
-import { User, Mail, Phone, Home } from 'lucide-react-native';
-import { parentUser } from '../../store/slices/authSlice';
-import { validateEmail } from '../../utils/validation';
+import { User, Mail, Phone, Home, Menu } from 'lucide-react-native';
+import { parentUser } from '../../../store/slices/authSlice';
+import { validateEmail } from '../../../utils/validation';
 
 export default function PetDetail() {
   const [formData, setFormData] = useState({
@@ -14,6 +14,15 @@ export default function PetDetail() {
     address: '',
   });
   const [errors, setErrors] = useState({});
+  const navigation = useNavigation();
+
+  // Disable the back button
+  // useEffect(() => {
+  //   navigation.setOptions({
+  //     headerLeft: () => null,
+  //     gestureEnabled: false,
+  //   });
+  // }, [navigation]);
 
   const dispatch = useDispatch();
   const { isLoading, error } = useSelector(state => state.auth);
@@ -83,7 +92,7 @@ export default function PetDetail() {
         Alert.alert(
           'Success',
           'Parent information has been saved successfully!',
-          [{ text: 'OK', onPress: () => router.replace('/(vetician_tabs)') }]
+          [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
         );
       }
     } catch (error) {
@@ -179,7 +188,7 @@ export default function PetDetail() {
             <TouchableOpacity
               style={styles.submitButton}
               onPress={handleSubmit}
-              // disabled={isLoading}
+            // disabled={isLoading}
             >
               <Text style={styles.submitButtonText}>
                 {/* {isLoading ? 'Saving Information...' : 'Save Parent Information'}  */}

@@ -1,8 +1,8 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { useRouter } from 'expo-router';
-import { signOut } from '../../store/slices/authSlice';
-import { User, Mail, Calendar, MapPin, Phone, CreditCard as Edit, LogOut, Stethoscope, PawPrint, Award } from 'lucide-react-native';
+import { signOut } from '../../../store/slices/authSlice';
+import { User, Mail, Calendar, MapPin, Phone, CreditCard as Edit, LogOut } from 'lucide-react-native';
 
 export default function Profile() {
   const { user } = useSelector(state => state.auth);
@@ -29,9 +29,9 @@ export default function Profile() {
 
   const profileInfo = [
     { icon: Mail, label: 'Email', value: user?.email || 'Not provided' },
-    { icon: Phone, label: 'Phone', value: user?.phone || 'Emergency contact' },
-    { icon: MapPin, label: 'Clinic Location', value: user?.location || 'Main Veterinary Clinic' },
-    { icon: Calendar, label: 'License Since', value: user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : '2020' },
+    { icon: Phone, label: 'Phone', value: user?.phone || 'Not provided' },
+    { icon: MapPin, label: 'Location', value: user?.location || 'Not provided' },
+    { icon: Calendar, label: 'Joined', value: user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Recently' },
   ];
 
   return (
@@ -45,13 +45,13 @@ export default function Profile() {
             <Edit size={16} color="#007AFF" />
           </TouchableOpacity>
         </View>
-        <Text style={styles.name}>Dr. {user?.name || 'Veterinarian'}</Text>
-        <Text style={styles.email}>{user?.specialization || 'General Practitioner'}</Text>
+        <Text style={styles.name}>{user?.name || 'User Name'}</Text>
+        <Text style={styles.email}>{user?.email || 'user@example.com'}</Text>
       </View>
 
       <View style={styles.content}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Professional Information</Text>
+          <Text style={styles.sectionTitle}>Personal Information</Text>
           <View style={styles.infoContainer}>
             {profileInfo.map((info, index) => (
               <View key={index} style={styles.infoItem}>
@@ -68,36 +68,31 @@ export default function Profile() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Practice Stats</Text>
+          <Text style={styles.sectionTitle}>Account Stats</Text>
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>24</Text>
-              <Text style={styles.statLabel}>Patients</Text>
-            </View>
-            <View style={styles.statItem}>
               <Text style={styles.statValue}>12</Text>
-              <Text style={styles.statLabel}>Surgeries</Text>
+              <Text style={styles.statLabel}>Activities</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>5</Text>
-              <Text style={styles.statLabel}>Years Exp.</Text>
+              <Text style={styles.statLabel}>Achievements</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>3</Text>
+              <Text style={styles.statLabel}>Weeks Active</Text>
             </View>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <Text style={styles.sectionTitle}>Actions</Text>
           <View style={styles.actionsContainer}>
             <TouchableOpacity style={styles.actionButton}>
-              <Stethoscope size={20} color="#007AFF" />
-              <Text style={styles.actionText}>New Case</Text>
+              <Edit size={20} color="#007AFF" />
+              <Text style={styles.actionText}>Edit Profile</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.actionButton}>
-              <PawPrint size={20} color="#007AFF" />
-              <Text style={styles.actionText}>Patient Records</Text>
-            </TouchableOpacity>
-
             <TouchableOpacity style={[styles.actionButton, styles.signOutButton]} onPress={handleSignOut}>
               <LogOut size={20} color="#ff3b30" />
               <Text style={[styles.actionText, styles.signOutText]}>Sign Out</Text>
@@ -109,7 +104,6 @@ export default function Profile() {
   );
 }
 
-// All styles remain exactly the same as in the original code
 const styles = StyleSheet.create({
   container: {
     flex: 1,

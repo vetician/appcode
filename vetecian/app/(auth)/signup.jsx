@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { signUpUser } from '../../store/slices/authSlice';
 import { validateEmail } from '../../utils/validation';
 import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react-native';
+import Onboarding from '../(vetician_tabs)/onboarding/onboarding_conf'
 
 export default function SignUp() {
   const [formData, setFormData] = useState({
@@ -76,11 +77,11 @@ export default function SignUp() {
 
       console.log("result : ", result)
 
-      if (result.success && result.user.role == 'vetician') {
+      if (result.success) {
         Alert.alert(
           'Account Created',
           'Your account has been created successfully!',
-          [{ text: 'OK', onPress: () => router.replace(role == 'vetician' ? '/parent_detail' : '/(doc_tabs)') }]
+          [{ text: 'OK', onPress: () => router.replace(role === 'veterinarian' ? '/(doc_tabs)/onboarding/onboarding_conf' : '/(vetician_tabs)/onboarding/onboarding_conf') }]
         );
       }
     } catch (error) {
