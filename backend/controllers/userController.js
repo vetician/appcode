@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Veterinarian = require('../models/Veterinarian')
 const { AppError } = require('../utils/appError');
 const { catchAsync } = require('../utils/catchAsync');
 
@@ -73,9 +74,66 @@ const deleteAccount = catchAsync(async (req, res, next) => {
   });
 });
 
+// Get veterinarian public profile (unverified data)
+const getVeterinarianPublicProfile = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+
+  const veterinarian = await Veterinarian.findById(id);
+  if (!veterinarian) {
+    return next(new AppError('Veterinarian not found', 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    veterinarian: veterinarian.getPublicProfile()
+  });
+});
+
+// Admin route to get full veterinarian details including verification status
+const getVeterinarianAdmin = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+
+  const veterinarian = await Veterinarian.findById(id);
+  if (!veterinarian) {
+    return next(new AppError('Veterinarian not found', 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    veterinarian
+  });
+});
+
+// Get all veterinarians (public view)
+const getAllVeterinarians = catchAsync(async (req, res) => {
+  const veterinarians = await Veterinarian.find({ isVerified: true }); // Only show verified vets to public
+  const publicProfiles = veterinarians.map(vet => vet.getPublicProfile());
+
+  res.status(200).json({
+    success: true,
+    count: publicProfiles.length,
+    veterinarians: publicProfiles
+  });
+});
+
+// Admin route to get all veterinarians including unverified
+const getAllVeterinariansAdmin = catchAsync(async (req, res) => {
+  const veterinarians = await Veterinarian.find({});
+
+  res.status(200).json({
+    success: true,
+    count: veterinarians.length,
+    veterinarians
+  });
+});
+
 module.exports = {
   getProfile,
   updateProfile,
   changePassword,
   deleteAccount,
+  getVeterinarianPublicProfile,
+  getVeterinarianAdmin,
+  getAllVeterinarians,
+  getAllVeterinariansAdmin
 };

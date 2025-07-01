@@ -41,6 +41,46 @@ export const parentUser = createAsyncThunk(
   }
 );
 
+export const veterinarianUser = createAsyncThunk(
+  'auth/veterinarian',
+  async ({
+    title,
+    name,
+    gender,
+    city,
+    experience,
+    specialization,
+    profilePhotoUrl,
+    qualification,
+    qualificationDocsUrl,
+    registration,
+    registrationProofUrl,
+    identityProof,
+    identityProofUrl
+  }, { rejectWithValue }) => {
+    try {
+      const response = await authAPI.veterinarian(
+        title,
+        name,
+        gender,
+        city,
+        experience,
+        specialization,
+        profilePhotoUrl,
+        qualification,
+        qualificationDocsUrl,
+        registration,
+        registrationProofUrl,
+        identityProof,
+        identityProofUrl
+      );
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message || 'Veterinarian registration failed');
+    }
+  }
+);
+
 export const registerPet = createAsyncThunk(
   'auth/pet',
   async (petData, { rejectWithValue }) => {

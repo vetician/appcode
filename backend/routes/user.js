@@ -5,6 +5,10 @@ const {
   updateProfile,
   changePassword,
   deleteAccount,
+  getVeterinarianPublicProfile,
+  getVeterinarianAdmin,
+  getAllVeterinarians,
+  getAllVeterinariansAdmin
 } = require('../controllers/userController');
 const { auth } = require('../middleware/auth');
 const { validate } = require('../middleware/validation');
@@ -44,5 +48,13 @@ router.get('/profile', auth, getProfile);
 router.put('/profile', auth, updateProfileValidation, validate, updateProfile);
 router.put('/change-password', auth, changePasswordValidation, validate, changePassword);
 router.delete('/account', auth, deleteAccount);
+
+// Public routes
+router.get('/veterinarians/:id', getVeterinarianPublicProfile);
+router.get('/veterinarians', getAllVeterinarians);
+
+// Admin routes
+router.get('/admin/veterinarians/:id', getVeterinarianAdmin);
+router.get('/admin/veterinarians', getAllVeterinariansAdmin);
 
 module.exports = router;

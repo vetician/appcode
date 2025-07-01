@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Parent = require('../models/Parent');
 const Pet = require('../models/Pet');
+const Veterinarian = require('../models/Veterinarian');
 const { AppError } = require('../utils/appError');
 const { catchAsync } = require('../utils/catchAsync');
 
@@ -28,13 +29,13 @@ const register = catchAsync(async (req, res, next) => {
   const { name, email, password, role = 'vetician' } = req.body;
   console.log(req.body);
 
-    // Validate role
+  // Validate role
   if (role && !['veterinarian', 'vetician'].includes(role)) {
     return next(new AppError('Invalid role specified', 400));
   }
 
   // Check if user already exists
-  const existingUser = await User.findOne({ 
+  const existingUser = await User.findOne({
     email: email.toLowerCase().trim(),
     role
   });
@@ -48,7 +49,7 @@ const register = catchAsync(async (req, res, next) => {
     name: name.trim(),
     email: email.toLowerCase().trim(),
     password,
-    role 
+    role
   });
   console.log(user)
 
@@ -155,6 +156,101 @@ const registerParent = catchAsync(async (req, res, next) => {
     parent: parent.getPublicProfile(),
     token: accessToken,
     refreshToken,
+  });
+});
+
+// create Veterinarian 
+const registerVeterinarian = catchAsync(async (req, res, next) => {
+  const flatData = req.body;
+
+  // Check existing veterinarian
+  const existingVeterinarian = await Veterinarian.findOne({ 
+    'registration.value': flatData.registration 
+  });
+  
+  if (existingVeterinarian) {
+    return next(new AppError('Veterinarian with this registration number already exists', 400));
+  }
+
+  // Transform flat data to nested structure
+  const veterinarianData = {};
+  for (const [key, value] of Object.entries(flatData)) {
+    veterinarianData[key] = {
+      value: key === 'experience' ? Number(value) : value,
+      verified: false
+    };
+  }
+
+  // Create new veterinarian
+  const veterinarian = new Veterinarian({
+    ...veterinarianData,
+    isVerified: false,
+    isActive: true
+  });
+
+  await veterinarian.save();
+
+  // Generate tokens
+  const { accessToken, refreshToken } = generateTokens(veterinarian._id);
+
+  // Add refresh token
+  veterinarian.refreshTokens.push({ token: refreshToken });
+  await veterinarian.save();
+
+  res.status(201).json({
+    success: true,
+    message: 'Veterinarian registered successfully. Please wait for verification.',
+    veterinarian: veterinarian.getPublicProfile(),
+    token: accessToken,
+    refreshToken
+  });
+});
+
+// get unverified veterinarians (admin)
+const getUnverifiedVeterinarians = catchAsync(async (req, res, next) => {
+  const veterinarians = await Veterinarian.find({ isVerified: false })
+  .select('-refreshTokens') // Exclude refresh tokens
+  .lean(); // Convert to plain JS object
+  
+  // Flatten the nested structure for response
+  const formattedVets = veterinarians.map(vet => {
+    const formatted = {};
+    Object.keys(vet).forEach(key => {
+      formatted[key] = vet[key]?.value || vet[key];
+    });
+    return formatted;
+  });
+  
+  res.status(200).json({
+    success: true,
+    count: formattedVets.length,
+    veterinarians: formattedVets
+  });
+});
+
+// get verified veterinarians (admin)
+const getVerifiedVeterinarians = catchAsync(async (req, res, next) => {
+  // Add optional filters (city, specialization, etc.)
+  const filter = { isVerified: true };
+  if (req.query.city) filter['city.value'] = req.query.city;
+  if (req.query.specialization) filter['specialization.value'] = req.query.specialization;
+
+  const veterinarians = await Veterinarian.find(filter)
+    .select('-refreshTokens')
+    .lean();
+
+  const formattedVets = veterinarians.map(vet => {
+    const formatted = {};
+    Object.keys(vet).forEach(key => {
+      formatted[key] = vet[key]?.value || vet[key];
+    });
+    return formatted;
+  });
+
+  res.status(200).json({
+    success: true,
+    count: formattedVets.length,
+    veterinarians: formattedVets
   });
 });
 
@@ -278,5 +374,8 @@ module.exports = {
   logout,
   logoutAll,
   registerParent,
-  createPet
+  createPet,
+  registerVeterinarian,
+  getUnverifiedVeterinarians,
+  getVerifiedVeterinarians
 };

@@ -7,7 +7,10 @@ const {
   logout,
   logoutAll,
   registerParent,
-  createPet
+  createPet,
+  registerVeterinarian,
+  getUnverifiedVeterinarians,
+  getVerifiedVeterinarians
 } = require('../controllers/authController');
 const { auth, protect } = require('../middleware/auth');
 const { validate } = require('../middleware/validation');
@@ -57,6 +60,9 @@ const loginValidation = [
 router.post('/register', registerValidation, validate, register);
 router.post('/login', loginValidation, validate, login);
 router.post('/parent-register', registerParent);
+router.post('/veterinarian-register', registerVeterinarian);
+router.post('/admin/verified', getVerifiedVeterinarians);
+router.post('/admin/unverified', getUnverifiedVeterinarians);
 router.post('/pet-register', createPet);
 router.post('/refresh-token', refreshToken);
 router.post('/logout', auth, logout);

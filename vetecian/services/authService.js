@@ -2,7 +2,7 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_BASE_URL = 'http://192.168.101.2:3000/api'; // Update this to your backend URL
+const API_BASE_URL = 'http://192.168.101.4:3000/api'; // Update this to your backend URL
 
 // Helper function to handle API responses
 const handleResponse = async (response) => {
@@ -62,6 +62,28 @@ export const authAPI = {
     return await apiRequest('/auth/parent-register', {
       method: 'POST',
       body: JSON.stringify({ name, email, phone, address }),
+    });
+  },
+
+  // Veterinarian register
+  veterinarian: async (title, name, gender, city, experience, specialization, profilePhotoUrl, qualification, qualificationDocsUrl, registration, registrationProofUrl, identityProof, identityProofUrl) => {
+    return await apiRequest('/auth/veterinarian-register', {
+      method: 'POST',
+      body: JSON.stringify({
+        title,
+        name,
+        gender,
+        city,
+        experience,
+        specialization,
+        profilePhotoUrl,
+        qualification,
+        qualificationDocsUrl,
+        registration,
+        registrationProofUrl,
+        identityProof,
+        identityProofUrl
+      }),
     });
   },
 

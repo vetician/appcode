@@ -87,6 +87,7 @@ export default function PetDetail() {
         phone: formData.phone,
         address: formData.address
       })).unwrap();
+      console.log(result)
 
       if (result.success) {
         Alert.alert(
