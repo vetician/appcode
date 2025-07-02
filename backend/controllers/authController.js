@@ -205,6 +205,60 @@ const registerVeterinarian = catchAsync(async (req, res, next) => {
     refreshToken
   });
 });
+// const registerVeterinarian = catchAsync(async (req, res, next) => {
+//   const flatData = req.body;
+
+//   // Check existing veterinarian
+//   const existingVeterinarian = await Veterinarian.findOne({ 
+//     'registration.value': flatData.registration 
+//   });
+  
+//   if (existingVeterinarian) {
+//     return next(new AppError('Veterinarian with this registration number already exists', 400));
+//   }
+
+//   // Fields that should remain flat (no verification)
+//   const flatFields = ['title', 'name'];
+  
+//   // Transform data to appropriate structure
+//   const veterinarianData = {};
+//   for (const [key, value] of Object.entries(flatData)) {
+//     if (flatFields.includes(key)) {
+//       // Simple fields (title, name)
+//       veterinarianData[key] = value;
+//     } else {
+//       // Fields that need verification
+//       veterinarianData[key] = {
+//         value: key === 'experience' ? Number(value) : value,
+//         verified: false
+//       };
+//     }
+//   }
+
+//   // Create new veterinarian
+//   const veterinarian = new Veterinarian({
+//     ...veterinarianData,
+//     isVerified: false,
+//     isActive: true
+//   });
+
+//   await veterinarian.save();
+
+//   // Generate tokens
+//   const { accessToken, refreshToken } = generateTokens(veterinarian._id);
+
+//   // Add refresh token
+//   veterinarian.refreshTokens.push({ token: refreshToken });
+//   await veterinarian.save();
+
+//   res.status(201).json({
+//     success: true,
+//     message: 'Veterinarian registered successfully. Please wait for verification.',
+//     veterinarian: veterinarian.getPublicProfile(),
+//     token: accessToken,
+//     refreshToken
+//   });
+// });
 
 // get unverified veterinarians (admin)
 const getUnverifiedVeterinarians = catchAsync(async (req, res, next) => {
@@ -251,6 +305,59 @@ const getVerifiedVeterinarians = catchAsync(async (req, res, next) => {
     success: true,
     count: formattedVets.length,
     veterinarians: formattedVets
+  });
+});
+
+// verify veterinarians detail (admin)
+const verifyVeterinarianField = catchAsync(async (req, res, next) => {
+  const { veterinarianId, fieldName } = req.params;
+  console.log(req.params)
+
+  // Find the veterinarian
+  const veterinarian = await Veterinarian.findById(veterinarianId);
+  if (!veterinarian) {
+    return next(new AppError('Veterinarian not found', 404));
+  }
+
+  // Check if the field exists and is not already verified
+  if (veterinarian[fieldName] && typeof veterinarian[fieldName] === 'object') {
+    if (veterinarian[fieldName].verified) {
+      return next(new AppError('Field is already verified', 400));
+    }
+
+    // Mark the field as verified
+    veterinarian[fieldName].verified = true;
+  } else {
+    return next(new AppError('Invalid field specified', 400));
+  }
+
+  // Check if all required fields are now verified
+  const requiredFields = [
+    'name', 'gender', 'city', 
+    'experience', 'specialization',
+    'qualification', 'registration', 
+    'identityProof'
+  ];
+
+  const allVerified = requiredFields.every(field => {
+    return veterinarian[field]?.verified === true;
+  });
+
+  // If all fields are verified, mark the veterinarian as verified
+  if (allVerified) {
+    veterinarian.isVerified = true;
+  }
+
+  await veterinarian.save();
+
+  res.status(200).json({
+    success: true,
+    message: `${fieldName} verified successfully`,
+    veterinarian: {
+      _id: veterinarian._id,
+      [fieldName]: veterinarian[fieldName],
+      isVerified: veterinarian.isVerified
+    }
   });
 });
 
@@ -377,5 +484,6 @@ module.exports = {
   createPet,
   registerVeterinarian,
   getUnverifiedVeterinarians,
-  getVerifiedVeterinarians
+  getVerifiedVeterinarians,
+  verifyVeterinarianField
 };

@@ -10,7 +10,8 @@ const {
   createPet,
   registerVeterinarian,
   getUnverifiedVeterinarians,
-  getVerifiedVeterinarians
+  getVerifiedVeterinarians,
+  verifyVeterinarianField
 } = require('../controllers/authController');
 const { auth, protect } = require('../middleware/auth');
 const { validate } = require('../middleware/validation');
@@ -63,6 +64,7 @@ router.post('/parent-register', registerParent);
 router.post('/veterinarian-register', registerVeterinarian);
 router.post('/admin/verified', getVerifiedVeterinarians);
 router.post('/admin/unverified', getUnverifiedVeterinarians);
+router.patch('/verify/:veterinarianId/:fieldName', verifyVeterinarianField);
 router.post('/pet-register', createPet);
 router.post('/refresh-token', refreshToken);
 router.post('/logout', auth, logout);
