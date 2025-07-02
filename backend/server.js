@@ -22,9 +22,16 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
+const allowedOrigins = [
+  process.env.FRONTENDAPP_URL,
+  process.env.FRONTENDWEB_URL,
+  'http://localhost:8081',
+  'http://localhost:5173'
+].filter(Boolean); // This removes any undefined values (like if FRONTEND_URL isn't set)
+
 // CORS configuration
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:8081',
+  origin: allowedOrigins,
   credentials: true,
 }));
 

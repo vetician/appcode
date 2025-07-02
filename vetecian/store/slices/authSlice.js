@@ -52,9 +52,9 @@ export const veterinarianUser = createAsyncThunk(
     specialization,
     profilePhotoUrl,
     qualification,
-    qualificationDocsUrl,
+    qualificationUrl,
     registration,
-    registrationProofUrl,
+    registrationUrl,
     identityProof,
     identityProofUrl
   }, { rejectWithValue }) => {
@@ -68,9 +68,9 @@ export const veterinarianUser = createAsyncThunk(
         specialization,
         profilePhotoUrl,
         qualification,
-        qualificationDocsUrl,
+        qualificationUrl,
         registration,
-        registrationProofUrl,
+        registrationUrl,
         identityProof,
         identityProofUrl
       );

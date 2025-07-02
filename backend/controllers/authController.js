@@ -205,60 +205,6 @@ const registerVeterinarian = catchAsync(async (req, res, next) => {
     refreshToken
   });
 });
-// const registerVeterinarian = catchAsync(async (req, res, next) => {
-//   const flatData = req.body;
-
-//   // Check existing veterinarian
-//   const existingVeterinarian = await Veterinarian.findOne({ 
-//     'registration.value': flatData.registration 
-//   });
-  
-//   if (existingVeterinarian) {
-//     return next(new AppError('Veterinarian with this registration number already exists', 400));
-//   }
-
-//   // Fields that should remain flat (no verification)
-//   const flatFields = ['title', 'name'];
-  
-//   // Transform data to appropriate structure
-//   const veterinarianData = {};
-//   for (const [key, value] of Object.entries(flatData)) {
-//     if (flatFields.includes(key)) {
-//       // Simple fields (title, name)
-//       veterinarianData[key] = value;
-//     } else {
-//       // Fields that need verification
-//       veterinarianData[key] = {
-//         value: key === 'experience' ? Number(value) : value,
-//         verified: false
-//       };
-//     }
-//   }
-
-//   // Create new veterinarian
-//   const veterinarian = new Veterinarian({
-//     ...veterinarianData,
-//     isVerified: false,
-//     isActive: true
-//   });
-
-//   await veterinarian.save();
-
-//   // Generate tokens
-//   const { accessToken, refreshToken } = generateTokens(veterinarian._id);
-
-//   // Add refresh token
-//   veterinarian.refreshTokens.push({ token: refreshToken });
-//   await veterinarian.save();
-
-//   res.status(201).json({
-//     success: true,
-//     message: 'Veterinarian registered successfully. Please wait for verification.',
-//     veterinarian: veterinarian.getPublicProfile(),
-//     token: accessToken,
-//     refreshToken
-//   });
-// });
 
 // get unverified veterinarians (admin)
 const getUnverifiedVeterinarians = catchAsync(async (req, res, next) => {
@@ -267,18 +213,18 @@ const getUnverifiedVeterinarians = catchAsync(async (req, res, next) => {
   .lean(); // Convert to plain JS object
   
   // Flatten the nested structure for response
-  const formattedVets = veterinarians.map(vet => {
-    const formatted = {};
-    Object.keys(vet).forEach(key => {
-      formatted[key] = vet[key]?.value || vet[key];
-    });
-    return formatted;
-  });
+  // const formattedVets = veterinarians.map(vet => {
+  //   const formatted = {};
+  //   Object.keys(vet).forEach(key => {
+  //     formatted[key] = vet[key]?.value || vet[key];
+  //   });
+  //   return formatted;
+  // });
   
   res.status(200).json({
     success: true,
-    count: formattedVets.length,
-    veterinarians: formattedVets
+    count: veterinarians.length,
+    veterinarians: veterinarians
   });
 });
 
@@ -293,18 +239,18 @@ const getVerifiedVeterinarians = catchAsync(async (req, res, next) => {
     .select('-refreshTokens')
     .lean();
 
-  const formattedVets = veterinarians.map(vet => {
-    const formatted = {};
-    Object.keys(vet).forEach(key => {
-      formatted[key] = vet[key]?.value || vet[key];
-    });
-    return formatted;
-  });
+  // const formattedVets = veterinarians.map(vet => {
+  //   const formatted = {};
+  //   Object.keys(vet).forEach(key => {
+  //     formatted[key] = vet[key]?.value || vet[key];
+  //   });
+  //   return formatted;
+  // });
 
   res.status(200).json({
     success: true,
-    count: formattedVets.length,
-    veterinarians: formattedVets
+    count: veterinarians.length,
+    veterinarians: veterinarians
   });
 });
 

@@ -282,8 +282,8 @@ export default function CreateProfile() {
         registration: formData.registration.trim(),
         identityProof: formData.identityProof.trim(),
         profilePhotoUrl: profilePhoto.secure_url,
-        qualificationDocsUrl: qualificationDocs.secure_url,
-        registrationProofUrl: registrationProof.secure_url,
+        qualificationUrl: qualificationDocs.secure_url,
+        registrationUrl: registrationProof.secure_url,
         identityProofUrl: identityProof.secure_url
       };
 

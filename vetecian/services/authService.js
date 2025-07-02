@@ -66,7 +66,7 @@ export const authAPI = {
   },
 
   // Veterinarian register
-  veterinarian: async (title, name, gender, city, experience, specialization, profilePhotoUrl, qualification, qualificationDocsUrl, registration, registrationProofUrl, identityProof, identityProofUrl) => {
+  veterinarian: async (title, name, gender, city, experience, specialization, profilePhotoUrl, qualification, qualificationUrl, registration, registrationUrl, identityProof, identityProofUrl) => {
     return await apiRequest('/auth/veterinarian-register', {
       method: 'POST',
       body: JSON.stringify({
@@ -78,9 +78,9 @@ export const authAPI = {
         specialization,
         profilePhotoUrl,
         qualification,
-        qualificationDocsUrl,
+        qualificationUrl,
         registration,
-        registrationProofUrl,
+        registrationUrl,
         identityProof,
         identityProofUrl
       }),
