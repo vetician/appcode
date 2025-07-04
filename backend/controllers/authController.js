@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Parent = require('../models/Parent');
 const Pet = require('../models/Pet');
+const Clinic = require('../models/Clinic');
 const Veterinarian = require('../models/Veterinarian');
 const { AppError } = require('../utils/appError');
 const { catchAsync } = require('../utils/catchAsync');
@@ -160,21 +161,110 @@ const registerParent = catchAsync(async (req, res, next) => {
 });
 
 // create Veterinarian 
+// const registerVeterinarian = catchAsync(async (req, res, next) => {
+//   const flatData = req.body;
+
+//   // Check if userId exists in the request
+//   if (!flatData.userId) {
+//     return next(new AppError('User ID is required', 400));
+//   }
+
+//   // Check existing veterinarian by userId
+//   const existingVeterinarianByUserId = await Veterinarian.findOne({ 
+//     userId: flatData.userId 
+//   });
+
+//   if (existingVeterinarianByUserId) {
+//     return next(new AppError('You have already applied for verification', 400));
+//   }
+
+//   // Check existing veterinarian by registration number
+//   const existingVeterinarianByReg = await Veterinarian.findOne({ 
+//     'registration.value': flatData.registration 
+//   });
+
+//   if (existingVeterinarianByReg) {
+//     return next(new AppError('Veterinarian with this registration number already exists', 400));
+//   }
+
+//   // Transform flat data to nested structure
+//   const veterinarianData = {};
+//   for (const [key, value] of Object.entries(flatData)) {
+//     // Skip userId as it's not part of the verified fields structure
+//     if (key === 'userId') continue;
+
+//     veterinarianData[key] = {
+//       value: key === 'experience' ? Number(value) : value,
+//       verified: false
+//     };
+//   }
+
+//   // Create new veterinarian
+//   const veterinarian = new Veterinarian({
+//     ...veterinarianData,
+//     userId: flatData.userId,  // Set the userId separately
+//     isVerified: false,
+//     isActive: true
+//   });
+
+//   await veterinarian.save();
+
+//   // Generate tokens
+//   const { accessToken, refreshToken } = generateTokens(veterinarian._id);
+
+//   // Add refresh token
+//   veterinarian.refreshTokens.push({ token: refreshToken });
+//   await veterinarian.save();
+
+//   res.status(201).json({
+//     success: true,
+//     message: 'Veterinarian registered successfully. Please wait for verification.',
+//     veterinarian: veterinarian.getPublicProfile(),
+//     token: accessToken,
+//     refreshToken
+//   });
+// });
 const registerVeterinarian = catchAsync(async (req, res, next) => {
   const flatData = req.body;
+  console.log(req.body)
 
-  // Check existing veterinarian
-  const existingVeterinarian = await Veterinarian.findOne({ 
-    'registration.value': flatData.registration 
+  // Check if userId exists in the request
+  if (!flatData.userId) {
+    return res.status(400).json({  // Changed to return JSON response
+      success: false,
+      message: 'User ID is required'
+    });
+  }
+
+  // Check existing veterinarian by userId
+  const existingVeterinarianByUserId = await Veterinarian.findOne({
+    userId: flatData.userId
   });
-  
-  if (existingVeterinarian) {
-    return next(new AppError('Veterinarian with this registration number already exists', 400));
+
+  if (existingVeterinarianByUserId) {
+    return res.status(400).json({  // Changed to return JSON response
+      success: false,
+      message: 'You have already applied for verification'
+    });
+  }
+
+  // Check existing veterinarian by registration number
+  const existingVeterinarianByReg = await Veterinarian.findOne({
+    'registration.value': flatData.registration
+  });
+
+  if (existingVeterinarianByReg) {
+    return res.status(400).json({  // Changed to return JSON response
+      success: false,
+      message: 'A veterinarian with this registration number already exists.' // Note: Added period to match frontend check
+    });
   }
 
   // Transform flat data to nested structure
   const veterinarianData = {};
   for (const [key, value] of Object.entries(flatData)) {
+    if (key === 'userId') continue;
+
     veterinarianData[key] = {
       value: key === 'experience' ? Number(value) : value,
       verified: false
@@ -184,6 +274,7 @@ const registerVeterinarian = catchAsync(async (req, res, next) => {
   // Create new veterinarian
   const veterinarian = new Veterinarian({
     ...veterinarianData,
+    userId: flatData.userId,
     isVerified: false,
     isActive: true
   });
@@ -199,19 +290,63 @@ const registerVeterinarian = catchAsync(async (req, res, next) => {
 
   res.status(201).json({
     success: true,
-    message: 'Veterinarian registered successfully. Please wait for verification.',
+    message: 'Veterinarian profile submitted successfully! Your account will be activated after verification.',
     veterinarian: veterinarian.getPublicProfile(),
     token: accessToken,
     refreshToken
   });
 });
 
+// check veterinarian verification
+const checkVeterinarianVerification = catchAsync(async (req, res, next) => {
+  const { userId } = req.body;
+  console.log(req.body)
+
+  // Check if userId exists in the request
+  if (!userId) {
+    return res.status(400).json({
+      success: false,
+      message: 'User ID is required',
+      alertType: 'error'
+    });
+  }
+
+  // Find veterinarian by userId
+  const veterinarian = await Veterinarian.findOne({ userId });
+
+  if (!veterinarian) {
+    return res.status(404).json({
+      success: false,
+      message: 'Veterinarian profile not found. Please register first.',
+      alertType: 'error'
+    });
+  }
+
+  if (!veterinarian.isVerified) {
+    return res.status(403).json({
+      success: false,
+      message: 'Your veterinarian account is not yet verified. Please wait for verification.',
+      alertType: 'warning',
+      isVerified: false
+    });
+  }
+
+  // If verified
+  res.status(200).json({
+    success: true,
+    message: 'Account verified! You can now add your clinic.',
+    alertType: 'success',
+    isVerified: true,
+    veterinarianId: veterinarian._id
+  });
+});
+
 // get unverified veterinarians (admin)
 const getUnverifiedVeterinarians = catchAsync(async (req, res, next) => {
   const veterinarians = await Veterinarian.find({ isVerified: false })
-  .select('-refreshTokens') // Exclude refresh tokens
-  .lean(); // Convert to plain JS object
-  
+    .select('-refreshTokens') // Exclude refresh tokens
+    .lean(); // Convert to plain JS object
+
   // Flatten the nested structure for response
   // const formattedVets = veterinarians.map(vet => {
   //   const formatted = {};
@@ -220,7 +355,7 @@ const getUnverifiedVeterinarians = catchAsync(async (req, res, next) => {
   //   });
   //   return formatted;
   // });
-  
+
   res.status(200).json({
     success: true,
     count: veterinarians.length,
@@ -279,9 +414,9 @@ const verifyVeterinarianField = catchAsync(async (req, res, next) => {
 
   // Check if all required fields are now verified
   const requiredFields = [
-    'name', 'gender', 'city', 
+    'name', 'gender', 'city',
     'experience', 'specialization',
-    'qualification', 'registration', 
+    'qualification', 'registration',
     'identityProof'
   ];
 
@@ -304,6 +439,74 @@ const verifyVeterinarianField = catchAsync(async (req, res, next) => {
       [fieldName]: veterinarian[fieldName],
       isVerified: veterinarian.isVerified
     }
+  });
+});
+
+// register clinic
+const registerClinic = catchAsync(async (req, res, next) => {
+  const clinicData = req.body;
+  console.log(req.body);
+
+  // Check if userId exists in the request
+  if (!clinicData.userId) {
+    return res.status(400).json({
+      success: false,
+      message: 'User ID is required'
+    });
+  }
+
+  // Check existing clinic by userId
+  const existingClinicByUserId = await Clinic.findOne({
+    userId: clinicData.userId
+  });
+
+  if (existingClinicByUserId) {
+    return res.status(400).json({
+      success: false,
+      message: 'You have already registered a clinic'
+    });
+  }
+
+  // Check existing clinic by name in the same city
+  const existingClinicByName = await Clinic.findOne({
+    clinicName: clinicData.clinicName,
+    city: clinicData.city
+  });
+
+  if (existingClinicByName) {
+    return res.status(400).json({
+      success: false,
+      message: 'A clinic with this name already exists in the same city'
+    });
+  }
+
+  // Create new clinic with verification status
+  const clinic = new Clinic({
+    ...clinicData,
+    status: 'pending', // Set initial status to pending for admin verification
+    isActive: false    // Clinic will be activated after verification
+  });
+
+  await clinic.save();
+
+  // Generate tokens (if needed for clinic owners)
+  const { accessToken, refreshToken } = generateTokens(clinic._id);
+
+  // Add refresh token to user (if implementing token system for clinics)
+  // This part would depend on your auth system architecture
+
+  res.status(201).json({
+    success: true,
+    message: 'Clinic registration submitted successfully! Your clinic will be activated after verification.',
+    clinic: {
+      id: clinic._id,
+      name: clinic.clinicName,
+      city: clinic.city,
+      status: clinic.status,
+      ownerProof: clinic.ownerProof
+    },
+    token: accessToken,
+    refreshToken
   });
 });
 
@@ -431,5 +634,7 @@ module.exports = {
   registerVeterinarian,
   getUnverifiedVeterinarians,
   getVerifiedVeterinarians,
-  verifyVeterinarianField
+  verifyVeterinarianField,
+  checkVeterinarianVerification,
+  registerClinic
 };

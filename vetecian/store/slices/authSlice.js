@@ -136,6 +136,33 @@ export const refreshToken = createAsyncThunk(
   }
 );
 
+export const checkVeterinarianVerification = createAsyncThunk(
+  'auth/checkVeterinarianVerification',
+  async (_, { rejectWithValue }) => {
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+
+      const response = await authAPI.veterinarianCheck(userId);
+
+      if (!response.success) {
+        throw new Error(response.message || 'Verification check failed');
+      }
+
+      return {
+        isVerified: response.isVerified,
+        message: response.message,
+        veterinarianData: response.veterinarian
+      };
+
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message || 'Verification check failed');
+    }
+  }
+);
+
 const initialState = {
   user: null,
   token: null,
@@ -143,7 +170,8 @@ const initialState = {
   isAuthenticated: false,
   isLoading: false,
   error: null,
-  signUpSuccess: false
+  signUpSuccess: false,
+  veterinarianVerification: null
 };
 
 const authSlice = createSlice({
@@ -166,8 +194,6 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-
-
       // Sign In
       .addCase(signInUser.pending, (state) => {
         state.isLoading = true;
@@ -205,6 +231,7 @@ const authSlice = createSlice({
         state.error = action.payload;
         state.isAuthenticated = false;
       })
+
       // Refresh Token
       .addCase(refreshToken.pending, (state) => {
         state.isLoading = true;
@@ -218,11 +245,25 @@ const authSlice = createSlice({
       .addCase(refreshToken.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
-        // If refresh fails, sign out the user
         state.user = null;
         state.token = null;
         state.refreshToken = null;
         state.isAuthenticated = false;
+      })
+
+      // Check Veterinarian Verification
+      .addCase(checkVeterinarianVerification.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(checkVeterinarianVerification.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.veterinarianVerification = action.payload;
+        state.error = null;
+      })
+      .addCase(checkVeterinarianVerification.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
       });
   },
 });

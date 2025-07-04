@@ -91,7 +91,6 @@ const petSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
-
   userId: {
     type: String,
     required: true

@@ -2,6 +2,7 @@ import React from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import Home from '../../../components/veterinarian/home/Home';
 import Veterinarian from '../onboarding/veterinarian_detail'
+import Clinic from '../onboarding/clinic'
 
 const Drawer = createDrawerNavigator();
 
@@ -25,6 +26,11 @@ export default function AppDrawer() {
                 name="Veterinarian Detail"
                 component={Veterinarian}
                 options={{ headerShown: false, title: 'Veterinarian Detail' }}
+            />
+            <Drawer.Screen
+                name="Clinic"
+                component={Clinic}
+                options={{ headerShown: false, title: 'Clinic' }}
             />
         </Drawer.Navigator>
     );

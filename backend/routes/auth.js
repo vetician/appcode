@@ -11,7 +11,9 @@ const {
   registerVeterinarian,
   getUnverifiedVeterinarians,
   getVerifiedVeterinarians,
-  verifyVeterinarianField
+  verifyVeterinarianField,
+  checkVeterinarianVerification,
+  registerClinic
 } = require('../controllers/authController');
 const { auth, protect } = require('../middleware/auth');
 const { validate } = require('../middleware/validation');
@@ -61,11 +63,15 @@ const loginValidation = [
 router.post('/register', registerValidation, validate, register);
 router.post('/login', loginValidation, validate, login);
 router.post('/parent-register', registerParent);
+router.post('/pet-register', createPet);
+
 router.post('/veterinarian-register', registerVeterinarian);
 router.post('/admin/verified', getVerifiedVeterinarians);
 router.post('/admin/unverified', getUnverifiedVeterinarians);
 router.patch('/verify/:veterinarianId/:fieldName', verifyVeterinarianField);
-router.post('/pet-register', createPet);
+router.post('/check-veterinarian-verification', checkVeterinarianVerification);
+router.post('/register-clinic', registerClinic);
+
 router.post('/refresh-token', refreshToken);
 router.post('/logout', auth, logout);
 router.post('/logout-all', auth, logoutAll);

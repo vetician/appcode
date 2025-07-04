@@ -66,25 +66,65 @@ export const authAPI = {
   },
 
   // Veterinarian register
-  veterinarian: async (title, name, gender, city, experience, specialization, profilePhotoUrl, qualification, qualificationUrl, registration, registrationUrl, identityProof, identityProofUrl) => {
-    return await apiRequest('/auth/veterinarian-register', {
-      method: 'POST',
-      body: JSON.stringify({
-        title,
-        name,
-        gender,
-        city,
-        experience,
-        specialization,
-        profilePhotoUrl,
-        qualification,
-        qualificationUrl,
-        registration,
-        registrationUrl,
-        identityProof,
-        identityProofUrl
-      }),
-    });
+  veterinarian: async (
+    title,
+    name,
+    gender,
+    city,
+    experience,
+    specialization,
+    profilePhotoUrl,
+    qualification,
+    qualificationUrl,
+    registration,
+    registrationUrl,
+    identityProof,
+    identityProofUrl
+  ) => {
+    try {
+      // Get the userId from AsyncStorage
+      const userId = await AsyncStorage.getItem('userId');
+
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+
+      return await apiRequest('/auth/veterinarian-register', {
+        method: 'POST',
+        body: JSON.stringify({
+          title,
+          name,
+          gender,
+          city,
+          experience,
+          specialization,
+          profilePhotoUrl,
+          qualification,
+          qualificationUrl,
+          registration,
+          registrationUrl,
+          identityProof,
+          identityProofUrl,
+          userId: userId
+        }),
+      });
+    } catch (error) {
+      console.error('Error in veterinarian registration:', error);
+      throw error; // Re-throw the error for handling in the calling function
+    }
+  },
+
+  // veterinarian check
+  veterinarianCheck: async (userId) => {
+    try {
+      return await apiRequest('/auth/check-veterinarian-verification', {
+        method: 'POST',
+        body: JSON.stringify({ userId }),
+      });
+    } catch (error) {
+      console.error('Error checking verification:', error);
+      throw error;
+    }
   },
 
   // Pet register

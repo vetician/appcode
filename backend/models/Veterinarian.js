@@ -173,6 +173,10 @@ const veterinarianSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  userId: {
+    type: String,
+    required: true
+  },
   isActive: {
     type: Boolean,
     default: true
