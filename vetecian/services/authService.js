@@ -2,7 +2,7 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_BASE_URL = 'http://192.168.101.4:3000/api'; // Update this to your backend URL
+const API_BASE_URL = 'http://192.168.101.3:3000/api'; // Update thicd s to your backend URL
 
 // Helper function to handle API responses
 const handleResponse = async (response) => {
@@ -112,6 +112,21 @@ export const authAPI = {
       console.error('Error in veterinarian registration:', error);
       throw error; // Re-throw the error for handling in the calling function
     }
+  },
+
+  // Clinic register
+  clinic: async (clinicData) => {
+    const userId = await AsyncStorage.getItem('userId');
+    if (!userId) throw new Error('User not authenticated');
+
+    return await apiRequest('/auth/register-clinic', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...clinicData,
+        userId
+      }),
+    });
+
   },
 
   // veterinarian check

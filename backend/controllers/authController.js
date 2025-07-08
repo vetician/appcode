@@ -160,70 +160,10 @@ const registerParent = catchAsync(async (req, res, next) => {
   });
 });
 
-// create Veterinarian 
-// const registerVeterinarian = catchAsync(async (req, res, next) => {
-//   const flatData = req.body;
 
-//   // Check if userId exists in the request
-//   if (!flatData.userId) {
-//     return next(new AppError('User ID is required', 400));
-//   }
 
-//   // Check existing veterinarian by userId
-//   const existingVeterinarianByUserId = await Veterinarian.findOne({ 
-//     userId: flatData.userId 
-//   });
 
-//   if (existingVeterinarianByUserId) {
-//     return next(new AppError('You have already applied for verification', 400));
-//   }
-
-//   // Check existing veterinarian by registration number
-//   const existingVeterinarianByReg = await Veterinarian.findOne({ 
-//     'registration.value': flatData.registration 
-//   });
-
-//   if (existingVeterinarianByReg) {
-//     return next(new AppError('Veterinarian with this registration number already exists', 400));
-//   }
-
-//   // Transform flat data to nested structure
-//   const veterinarianData = {};
-//   for (const [key, value] of Object.entries(flatData)) {
-//     // Skip userId as it's not part of the verified fields structure
-//     if (key === 'userId') continue;
-
-//     veterinarianData[key] = {
-//       value: key === 'experience' ? Number(value) : value,
-//       verified: false
-//     };
-//   }
-
-//   // Create new veterinarian
-//   const veterinarian = new Veterinarian({
-//     ...veterinarianData,
-//     userId: flatData.userId,  // Set the userId separately
-//     isVerified: false,
-//     isActive: true
-//   });
-
-//   await veterinarian.save();
-
-//   // Generate tokens
-//   const { accessToken, refreshToken } = generateTokens(veterinarian._id);
-
-//   // Add refresh token
-//   veterinarian.refreshTokens.push({ token: refreshToken });
-//   await veterinarian.save();
-
-//   res.status(201).json({
-//     success: true,
-//     message: 'Veterinarian registered successfully. Please wait for verification.',
-//     veterinarian: veterinarian.getPublicProfile(),
-//     token: accessToken,
-//     refreshToken
-//   });
-// });
+// create Veterinarian
 const registerVeterinarian = catchAsync(async (req, res, next) => {
   const flatData = req.body;
   console.log(req.body)
@@ -347,15 +287,6 @@ const getUnverifiedVeterinarians = catchAsync(async (req, res, next) => {
     .select('-refreshTokens') // Exclude refresh tokens
     .lean(); // Convert to plain JS object
 
-  // Flatten the nested structure for response
-  // const formattedVets = veterinarians.map(vet => {
-  //   const formatted = {};
-  //   Object.keys(vet).forEach(key => {
-  //     formatted[key] = vet[key]?.value || vet[key];
-  //   });
-  //   return formatted;
-  // });
-
   res.status(200).json({
     success: true,
     count: veterinarians.length,
@@ -445,70 +376,177 @@ const verifyVeterinarianField = catchAsync(async (req, res, next) => {
 // register clinic
 const registerClinic = catchAsync(async (req, res, next) => {
   const clinicData = req.body;
-  console.log(req.body);
+  console.log(clinicData)
 
-  // Check if userId exists in the request
-  if (!clinicData.userId) {
+  // Validate required fields - return consistent error format
+  if (!clinicData.userId || !clinicData.clinicName || !clinicData.city || !clinicData.streetAddress) {
     return res.status(400).json({
       success: false,
-      message: 'User ID is required'
+      error: {
+        message: 'Missing required fields',
+        code: 400
+      }
     });
   }
 
-  // Check existing clinic by userId
-  const existingClinicByUserId = await Clinic.findOne({
-    userId: clinicData.userId
+  // Check existing clinics
+  const existingClinic = await Clinic.findOne({
+    $or: [
+      { userId: clinicData.userId },
+      {
+        clinicName: clinicData.clinicName,
+        city: clinicData.city
+      }
+    ]
   });
 
-  if (existingClinicByUserId) {
+  if (existingClinic) {
+    const message = existingClinic.userId === clinicData.userId
+      ? 'You have already registered a clinic'
+      : 'A clinic with this name already exists in this city';
+
     return res.status(400).json({
       success: false,
-      message: 'You have already registered a clinic'
+      error: {
+        message,
+        code: 400
+      }
     });
   }
 
-  // Check existing clinic by name in the same city
-  const existingClinicByName = await Clinic.findOne({
-    clinicName: clinicData.clinicName,
-    city: clinicData.city
-  });
-
-  if (existingClinicByName) {
-    return res.status(400).json({
-      success: false,
-      message: 'A clinic with this name already exists in the same city'
-    });
-  }
-
-  // Create new clinic with verification status
-  const clinic = new Clinic({
+  // Create and save clinic
+  const clinic = await Clinic.create({
     ...clinicData,
-    status: 'pending', // Set initial status to pending for admin verification
-    isActive: false    // Clinic will be activated after verification
+    verified: false,
+    isActive: false
   });
-
-  await clinic.save();
-
-  // Generate tokens (if needed for clinic owners)
-  const { accessToken, refreshToken } = generateTokens(clinic._id);
-
-  // Add refresh token to user (if implementing token system for clinics)
-  // This part would depend on your auth system architecture
 
   res.status(201).json({
     success: true,
-    message: 'Clinic registration submitted successfully! Your clinic will be activated after verification.',
-    clinic: {
-      id: clinic._id,
-      name: clinic.clinicName,
-      city: clinic.city,
-      status: clinic.status,
-      ownerProof: clinic.ownerProof
-    },
-    token: accessToken,
-    refreshToken
+    data: {
+      clinicId: clinic._id,
+      status: clinic.status
+    }
   });
 });
+
+// get unverified clinics (admin)
+const getUnverifiedClinics = catchAsync(async (req, res, next) => {
+  const clinics = await Clinic.find({ verified: false })
+    .lean();
+
+  // Get all unique user IDs from clinics
+  const userIds = [...new Set(clinics.map(c => c.userId))];
+
+  // Get all related veterinarians in one query
+  const veterinarians = await Veterinarian.find({
+    userId: { $in: userIds }
+  }).lean();
+
+  // Create a map of userId -> veterinarian
+  const vetMap = new Map();
+  veterinarians.forEach(vet => {
+    vetMap.set(vet.userId, {
+      name: vet.name.value,
+      title: vet.title.value,
+      specialization: vet.specialization.value,
+      isVerified: vet.isVerified,
+      profilePhotoUrl: vet.profilePhotoUrl.value // Added profile photo
+    });
+  });
+  // console.log(vetMap)
+
+  const formattedClinics = clinics.map(clinic => ({
+    ...clinic, // Preserve all clinic properties
+    veterinarian: {
+      ...(vetMap.get(clinic.userId.toString()) || {}), // Keep existing vet info
+    }
+  }));
+  // console.log(formattedClinics)
+
+  res.status(200).json({
+    success: true,
+    count: formattedClinics.length,
+    clinics: formattedClinics
+  });
+});
+
+// get verified clinics (admin)
+const getVerifiedClinics = catchAsync(async (req, res, next) => {
+  const filter = { verified: true };
+  if (req.query.city) filter.city = req.query.city;
+  if (req.query.establishmentType) filter.establishmentType = req.query.establishmentType;
+  if (req.query.locality) filter.locality = req.query.locality;
+
+  const clinics = await Clinic.find(filter)
+    .lean();
+
+  // Get all unique user IDs from clinics
+  const userIds = [...new Set(clinics.map(c => c.userId))];
+
+  // Get all related veterinarians in one query
+  const veterinarians = await Veterinarian.find({
+    userId: { $in: userIds }
+  }).lean();
+
+  // Create a map of userId -> veterinarian
+  const vetMap = new Map();
+  veterinarians.forEach(vet => {
+    vetMap.set(vet.userId, {
+      name: vet.name.value,
+      title: vet.title.value,
+      specialization: vet.specialization.value,
+      experience: vet.experience.value,
+      profilePhotoUrl: vet.profilePhotoUrl.value, // Changed from profilePhoto to profilePhotoUrl
+      isVerified: vet.isVerified
+    });
+  });
+
+  const formattedClinics = clinics.map(clinic => ({
+    ...clinic, // Preserve all clinic properties
+    veterinarian: vetMap.get(clinic.userId.toString()) || null
+  }));
+
+  res.status(200).json({
+    success: true,
+    count: formattedClinics.length,
+    clinics: formattedClinics
+  });
+});
+
+// Verify Clinic (admin)
+const verifyClinic = catchAsync(async (req, res, next) => {
+  const { clinicId } = req.params;
+  console.log(clinicId)
+
+  // Find the clinic
+  const clinic = await Clinic.findById(clinicId);
+  if (!clinic) {
+    console.log('Clinic not found');
+    return next(new AppError('Clinic not found', 404));
+  }
+
+  // Check if already verified
+  if (clinic.verified) {
+    console.log('Clinic is already verified');
+    return next(new AppError('Clinic is already verified', 400));
+  }
+
+  // Mark the clinic as verified
+  clinic.verified = true;
+  await clinic.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Clinic verified successfully',
+    clinic: {
+      _id: clinic._id,
+      isVerified: clinic.verified
+    }
+  });
+});
+
+
 
 // Register pet
 const createPet = catchAsync(async (req, res, next) => {
@@ -636,5 +674,8 @@ module.exports = {
   getVerifiedVeterinarians,
   verifyVeterinarianField,
   checkVeterinarianVerification,
-  registerClinic
+  registerClinic,
+  getUnverifiedClinics,
+  getVerifiedClinics,
+  verifyClinic
 };

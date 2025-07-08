@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, TextInput, ScrollView, Modal, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, TextInput, ScrollView, Modal, Platform, ActivityIndicator, Alert } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useDispatch } from 'react-redux';
+import { registerClinic } from '../../../store/slices/authSlice';
+import Home from '../../../components/veterinarian/home/Home'
+import { useRouter } from 'expo-router';
 
 // Cloudinary upload function
 const uploadToCloudinary = async (file) => {
@@ -32,10 +36,10 @@ const uploadToCloudinary = async (file) => {
         const response = await new Promise((resolve, reject) => {
           const xhr = new XMLHttpRequest();
           xhr.open('POST', `https://api.cloudinary.com/v1_1/dqwzfs4ox/${type}/upload`);
-          
+
           xhr.timeout = 30000;
           xhr.ontimeout = () => reject(new Error('Timeout'));
-          
+
           xhr.onload = () => {
             if (xhr.status === 200) {
               resolve(JSON.parse(xhr.response));
@@ -43,7 +47,7 @@ const uploadToCloudinary = async (file) => {
               reject(new Error(`HTTP ${xhr.status}: ${xhr.responseText || 'No response'}`));
             }
           };
-          
+
           xhr.onerror = () => reject(new Error('Network error'));
           xhr.send(formData);
         });
@@ -84,6 +88,9 @@ const ClinicCreationFlow = ({ navigation }) => {
     ownerProof: null
   });
 
+  const dispatch = useDispatch();
+  const router = useRouter();
+
   const handleSetTiming = (day, field, value) => {
     setFormData(prev => ({
       ...prev,
@@ -110,9 +117,9 @@ const ClinicCreationFlow = ({ navigation }) => {
   // Step 1: Establishment Type
   if (step === 1) {
     return (
-      <EstablishmentTypeStep 
+      <EstablishmentTypeStep
         onContinue={(type) => {
-          setFormData({...formData, establishmentType: type});
+          setFormData({ ...formData, establishmentType: type });
           setStep(2);
         }}
       />
@@ -174,9 +181,33 @@ const ClinicCreationFlow = ({ navigation }) => {
     <DocumentUploadStep
       formData={formData}
       setFormData={setFormData}
-      onSubmit={(finalFormData) => {
-        console.log('Form submitted with Cloudinary URL:', finalFormData);
-        navigation.goBack();
+      onSubmit={async (finalFormData) => {
+        try {
+          const result = await dispatch(registerClinic(finalFormData)).unwrap();
+
+          if (result.success) {
+            Alert.alert(
+              'Success',
+              'Clinic registered successfully!',
+              [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
+            );
+          }
+        } catch (error) {
+          console.log("Error =>", error)
+          const errorMessage = error.payload?.error?.message || 'Registration failed';
+
+          if (errorMessage.includes('already exists in this city')) {
+            Alert.alert(
+              'Clinic Exists',
+              errorMessage,
+              [{ text: 'OK' }]
+            );
+          } else {
+            Alert.alert('Error', errorMessage);
+          }
+        } finally {
+          setIsSubmitting(false);
+        }
       }}
       onBack={() => setStep(5)}
     />
@@ -199,7 +230,7 @@ const EstablishmentTypeStep = ({ onContinue }) => {
       <View style={styles.content}>
         <Text style={styles.title}>CREATE CLINIC PROFILE</Text>
         <Text style={styles.subtitle}>Choose the type of establishment</Text>
-        
+
         <View style={styles.optionsContainer}>
           {options.map((option, index) => (
             <TouchableOpacity
@@ -216,9 +247,9 @@ const EstablishmentTypeStep = ({ onContinue }) => {
         </View>
       </View>
 
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[
-          styles.continueButton, 
+          styles.continueButton,
           styles.continueButtonFirst,
           !selectedOption && styles.disabledButton
         ]}
@@ -237,13 +268,13 @@ const ClinicDetailsStep = ({ formData, setFormData, onContinue, onBack }) => {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.title}>ADD CLINIC</Text>
-        
+
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Clinic Name</Text>
           <TextInput
             style={styles.input}
             value={formData.clinicName}
-            onChangeText={(text) => setFormData({...formData, clinicName: text})}
+            onChangeText={(text) => setFormData({ ...formData, clinicName: text })}
             placeholder="Enter clinic name"
           />
         </View>
@@ -253,7 +284,7 @@ const ClinicDetailsStep = ({ formData, setFormData, onContinue, onBack }) => {
           <TextInput
             style={styles.input}
             value={formData.city}
-            onChangeText={(text) => setFormData({...formData, city: text})}
+            onChangeText={(text) => setFormData({ ...formData, city: text })}
             placeholder="Enter city"
           />
         </View>
@@ -263,7 +294,7 @@ const ClinicDetailsStep = ({ formData, setFormData, onContinue, onBack }) => {
           <TextInput
             style={styles.input}
             value={formData.locality}
-            onChangeText={(text) => setFormData({...formData, locality: text})}
+            onChangeText={(text) => setFormData({ ...formData, locality: text })}
             placeholder="Enter locality"
           />
         </View>
@@ -273,7 +304,7 @@ const ClinicDetailsStep = ({ formData, setFormData, onContinue, onBack }) => {
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
           <Text style={styles.backText}>BACK</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[
             styles.continueButton,
             (!formData.clinicName || !formData.city || !formData.locality) && styles.disabledButton
@@ -294,13 +325,13 @@ const ClinicAddressStep = ({ formData, setFormData, onContinue, onBack }) => {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.title}>CLINIC ADDRESS</Text>
-        
+
         <View style={styles.inputGroup}>
           <Text style={styles.label}>City*</Text>
           <TextInput
             style={styles.input}
             value={formData.city}
-            onChangeText={(text) => setFormData({...formData, city: text})}
+            onChangeText={(text) => setFormData({ ...formData, city: text })}
             placeholder="Enter city"
           />
         </View>
@@ -310,7 +341,7 @@ const ClinicAddressStep = ({ formData, setFormData, onContinue, onBack }) => {
           <TextInput
             style={styles.input}
             value={formData.locality}
-            onChangeText={(text) => setFormData({...formData, locality: text})}
+            onChangeText={(text) => setFormData({ ...formData, locality: text })}
             placeholder="Enter locality"
           />
         </View>
@@ -320,7 +351,7 @@ const ClinicAddressStep = ({ formData, setFormData, onContinue, onBack }) => {
           <TextInput
             style={styles.input}
             value={formData.streetAddress}
-            onChangeText={(text) => setFormData({...formData, streetAddress: text})}
+            onChangeText={(text) => setFormData({ ...formData, streetAddress: text })}
             placeholder="Enter street address"
           />
         </View>
@@ -330,7 +361,7 @@ const ClinicAddressStep = ({ formData, setFormData, onContinue, onBack }) => {
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
           <Text style={styles.backText}>BACK</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[
             styles.continueButton,
             !formData.city && styles.disabledButton
@@ -351,7 +382,7 @@ const ClinicContactStep = ({ formData, setFormData, onContinue, onBack }) => {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.title}>CREATING CLINIC...</Text>
-        
+
         <View style={styles.clinicSummary}>
           <Text style={styles.clinicName}>{formData.clinicName}</Text>
           <Text style={styles.clinicDetail}>Location: {formData.streetAddress}, {formData.locality}, {formData.city}</Text>
@@ -362,7 +393,7 @@ const ClinicContactStep = ({ formData, setFormData, onContinue, onBack }) => {
           <TextInput
             style={styles.input}
             value={formData.clinicNumber}
-            onChangeText={(text) => setFormData({...formData, clinicNumber: text})}
+            onChangeText={(text) => setFormData({ ...formData, clinicNumber: text })}
             placeholder="Enter clinic number"
             keyboardType="phone-pad"
           />
@@ -373,7 +404,7 @@ const ClinicContactStep = ({ formData, setFormData, onContinue, onBack }) => {
           <TextInput
             style={styles.input}
             value={formData.fees}
-            onChangeText={(text) => setFormData({...formData, fees: text})}
+            onChangeText={(text) => setFormData({ ...formData, fees: text })}
             placeholder="Enter consultation fees"
             keyboardType="numeric"
           />
@@ -384,7 +415,7 @@ const ClinicContactStep = ({ formData, setFormData, onContinue, onBack }) => {
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
           <Text style={styles.backText}>BACK</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.continueButton}
           onPress={onContinue}
         >
@@ -396,13 +427,13 @@ const ClinicContactStep = ({ formData, setFormData, onContinue, onBack }) => {
 };
 
 // Step 5 Component: Session Timings
-const SessionTimingsStep = ({ 
-  formData, 
-  setFormData, 
-  handleSetTiming, 
+const SessionTimingsStep = ({
+  formData,
+  setFormData,
+  handleSetTiming,
   handleSetAllWeekdays,
-  onContinue, 
-  onBack 
+  onContinue,
+  onBack
 }) => {
   const [selectedDay, setSelectedDay] = useState('mon');
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -443,13 +474,13 @@ const SessionTimingsStep = ({
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.title}>SESSION TIMINGS</Text>
-        
+
         <View style={styles.toggleContainer}>
           <Text>Same timings for weekdays</Text>
           <TouchableOpacity onPress={toggleSameTimings}>
             <View style={styles.toggleButton}>
               <View style={[
-                styles.toggleCircle, 
+                styles.toggleCircle,
                 formData.sameTimingsForWeekdays ? styles.toggleOn : styles.toggleOff
               ]} />
             </View>
@@ -478,7 +509,7 @@ const SessionTimingsStep = ({
 
         <View style={styles.timingContainer}>
           <Text style={styles.timingLabel}>Start Time</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.timeInput}
             onPress={() => openTimePicker('start')}
           >
@@ -486,7 +517,7 @@ const SessionTimingsStep = ({
           </TouchableOpacity>
 
           <Text style={styles.timingLabel}>End Time</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.timeInput}
             onPress={() => openTimePicker('end')}
           >
@@ -497,7 +528,7 @@ const SessionTimingsStep = ({
         <View style={styles.timingTypeContainer}>
           <Text style={styles.timingLabel}>Appointment Type</Text>
           <View style={styles.typeButtons}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.typeButton,
                 formData.timings[selectedDay].type === 'Video' && styles.selectedType
@@ -506,7 +537,7 @@ const SessionTimingsStep = ({
             >
               <Text>Video</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.typeButton,
                 formData.timings[selectedDay].type === 'In-Clinic' && styles.selectedType
@@ -515,7 +546,7 @@ const SessionTimingsStep = ({
             >
               <Text>In-Clinic</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.typeButton,
                 formData.timings[selectedDay].type === 'Both' && styles.selectedType
@@ -527,7 +558,7 @@ const SessionTimingsStep = ({
           </View>
         </View>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.setAllButton}
           onPress={handleSetForAll}
         >
@@ -539,7 +570,7 @@ const SessionTimingsStep = ({
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
           <Text style={styles.backText}>BACK</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.continueButton}
           onPress={onContinue}
         >
@@ -552,11 +583,11 @@ const SessionTimingsStep = ({
         <View style={styles.modalContainer}>
           <View style={styles.timePicker}>
             <Text style={styles.timePickerTitle}>Select Time</Text>
-            
+
             <View style={styles.timeSelector}>
               <ScrollView style={styles.timeColumn}>
                 {Array.from({ length: 12 }, (_, i) => i + 1).map(hour => (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     key={`hour-${hour}`}
                     style={styles.timeOption}
                     onPress={() => handleTimeSelect(`${hour < 10 ? '0' + hour : hour}:00 am`)}
@@ -565,10 +596,10 @@ const SessionTimingsStep = ({
                   </TouchableOpacity>
                 ))}
               </ScrollView>
-              
+
               <ScrollView style={styles.timeColumn}>
                 {Array.from({ length: 12 }, (_, i) => i + 1).map(hour => (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     key={`hour-${hour}`}
                     style={styles.timeOption}
                     onPress={() => handleTimeSelect(`${hour < 10 ? '0' + hour : hour}:00 pm`)}
@@ -578,8 +609,8 @@ const SessionTimingsStep = ({
                 ))}
               </ScrollView>
             </View>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.cancelButton}
               onPress={() => setShowTimePicker(false)}
             >
@@ -609,7 +640,7 @@ const DocumentUploadStep = ({ formData, setFormData, onSubmit, onBack }) => {
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const selectedFile = result.assets[0];
         const fileInfo = await FileSystem.getInfoAsync(selectedFile.uri);
-        
+
         if (!fileInfo.exists) {
           throw new Error('Selected file could not be accessed');
         }
@@ -640,7 +671,7 @@ const DocumentUploadStep = ({ formData, setFormData, onSubmit, onBack }) => {
         ...formData,
         ownerProof: cloudinaryResponse.secure_url
       };
-      
+
       setFormData(updatedFormData);
       onSubmit(updatedFormData);
     } catch (error) {
@@ -655,13 +686,13 @@ const DocumentUploadStep = ({ formData, setFormData, onSubmit, onBack }) => {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.title}>CREATING CLINIC...</Text>
-        
+
         <View style={styles.clinicSummary}>
           <Text style={styles.clinicName}>{formData.clinicName}</Text>
           <Text style={styles.clinicDetail}>Location: {formData.streetAddress}, {formData.locality}, {formData.city}</Text>
           <Text style={styles.clinicDetail}>Clinic Number: {formData.clinicNumber || 'Not provided'}</Text>
           <Text style={styles.clinicDetail}>Fees: ₹{formData.fees || 'Not provided'}</Text>
-          
+
           <Text style={styles.sectionTitle}>Timings:</Text>
           {Object.entries(formData.timings).map(([day, timing]) => (
             timing.start && (
@@ -677,7 +708,7 @@ const DocumentUploadStep = ({ formData, setFormData, onSubmit, onBack }) => {
           <Text style={styles.helperText}>
             Acceptable documents: Clinic Registration Proof, Waste Disposal Proof, or Tax receipt
           </Text>
-          
+
           <TouchableOpacity
             style={[
               styles.uploadButton,
@@ -705,7 +736,7 @@ const DocumentUploadStep = ({ formData, setFormData, onSubmit, onBack }) => {
               </>
             )}
           </TouchableOpacity>
-          
+
           {uploadError && (
             <Text style={styles.errorText}>{uploadError}</Text>
           )}
@@ -713,15 +744,15 @@ const DocumentUploadStep = ({ formData, setFormData, onSubmit, onBack }) => {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity 
-          style={styles.backButton} 
+        <TouchableOpacity
+          style={styles.backButton}
           onPress={onBack}
           disabled={isUploading}
         >
           <Text style={styles.backText}>BACK</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={[
             styles.continueButton,
             isUploading && styles.uploadingButton

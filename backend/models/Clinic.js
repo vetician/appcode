@@ -109,10 +109,9 @@ const clinicSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  status: {
-    type: String,
-    enum: ['pending', 'approved', 'rejected'],
-    default: 'pending'
+  verified: {
+    type: Boolean,
+    default: false
   },
   createdAt: {
     type: Date,

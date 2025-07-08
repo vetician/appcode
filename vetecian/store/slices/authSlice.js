@@ -108,13 +108,72 @@ export const registerPet = createAsyncThunk(
         }
       });
 
-      // console.log(processedData)
-      // Send the complete data to the API
-      // const response = await authAPI.pet(processedData);
-
-      return await authAPI.pet(processedData);;
+      return await authAPI.pet(processedData);
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message || 'Pet registration failed');
+    }
+  }
+);
+
+export const registerClinic = createAsyncThunk(
+  'auth/clinic',
+  async (clinicData, { rejectWithValue }) => {
+    try {
+      // Required field validation
+      if (!clinicData.clinicName?.trim() || !clinicData.city?.trim() || !clinicData.streetAddress?.trim()) {
+        return rejectWithValue({
+          error: {
+            message: 'Clinic name, city, and address are required',
+            code: 400
+          },
+          success: false
+        });
+      }
+
+      if (!clinicData.ownerProof) {
+        return rejectWithValue({
+          error: {
+            message: 'Owner proof documentation is required',
+            code: 400
+          },
+          success: false
+        });
+      }
+
+      const userId = await AsyncStorage.getItem('userId');
+      if (!userId) {
+        return rejectWithValue({
+          error: {
+            message: 'User not authenticated',
+            code: 401
+          },
+          success: false
+        });
+      }
+
+      const response = await authAPI.clinic({
+        ...clinicData,
+        userId,
+        status: 'pending'
+      });
+
+      if (!response.success) {
+        return rejectWithValue(response); // Pass through the entire error response
+      }
+
+
+      return response;
+
+    } catch (error) {
+      return rejectWithValue({
+        error: {
+          message: error.response?.data?.error?.message || 
+                 error.message ||
+                 'Clinic registration failed',
+          code: error.response?.status || 500
+        },
+        success: false
+      });
     }
   }
 );
@@ -130,7 +189,6 @@ export const refreshToken = createAsyncThunk(
       const response = await authAPI.refreshToken(refreshToken);
       return response;
     } catch (error) {
-      // Clear auth state if refresh fails
       return rejectWithValue('Session expired. Please login again.');
     }
   }
@@ -156,9 +214,35 @@ export const checkVeterinarianVerification = createAsyncThunk(
         message: response.message,
         veterinarianData: response.veterinarian
       };
-
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message || 'Verification check failed');
+    }
+  }
+);
+
+export const checkClinicVerification = createAsyncThunk(
+  'auth/checkClinicVerification',
+  async (_, { rejectWithValue }) => {
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+
+      const response = await authAPI.clinicVerificationCheck(userId);
+
+      if (!response.success) {
+        throw new Error(response.message || 'Clinic verification check failed');
+      }
+
+      return {
+        isVerified: response.isVerified,
+        message: response.message,
+        clinicData: response.clinic,
+        status: response.status
+      };
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message || 'Clinic verification check failed');
     }
   }
 );
@@ -171,7 +255,9 @@ const initialState = {
   isLoading: false,
   error: null,
   signUpSuccess: false,
-  veterinarianVerification: null
+  veterinarianVerification: null,
+  clinicVerification: null,
+  clinicRegistrationStatus: null
 };
 
 const authSlice = createSlice({
@@ -184,6 +270,8 @@ const authSlice = createSlice({
       state.refreshToken = null;
       state.isAuthenticated = false;
       state.error = null;
+      state.veterinarianVerification = null;
+      state.clinicVerification = null;
     },
     clearError: (state) => {
       state.error = null;
@@ -191,6 +279,9 @@ const authSlice = createSlice({
     updateUser: (state, action) => {
       state.user = { ...state.user, ...action.payload };
     },
+    resetClinicRegistration: (state) => {
+      state.clinicRegistrationStatus = null;
+    }
   },
   extraReducers: (builder) => {
     builder
@@ -264,6 +355,42 @@ const authSlice = createSlice({
       .addCase(checkVeterinarianVerification.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
+      })
+
+      // Register Clinic
+      .addCase(registerClinic.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+        state.clinicRegistrationStatus = null;
+      })
+      .addCase(registerClinic.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.clinicRegistrationStatus = 'success';
+        state.error = null;
+        // Update user role if needed
+        if (state.user) {
+          state.user.role = 'clinic_owner';
+        }
+      })
+      .addCase(registerClinic.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+        state.clinicRegistrationStatus = 'failed';
+      })
+
+      // Check Clinic Verification
+      .addCase(checkClinicVerification.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(checkClinicVerification.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.clinicVerification = action.payload;
+        state.error = null;
+      })
+      .addCase(checkClinicVerification.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
       });
   },
 });
@@ -275,5 +402,10 @@ function isValidDate(dateString) {
   return d instanceof Date && !isNaN(d);
 }
 
-export const { signOut, clearError, updateUser } = authSlice.actions;
+export const {
+  signOut,
+  clearError,
+  updateUser,
+  resetClinicRegistration
+} = authSlice.actions;
 export default authSlice.reducer;
