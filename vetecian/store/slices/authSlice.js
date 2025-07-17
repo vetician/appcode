@@ -167,9 +167,9 @@ export const registerClinic = createAsyncThunk(
     } catch (error) {
       return rejectWithValue({
         error: {
-          message: error.response?.data?.error?.message || 
-                 error.message ||
-                 'Clinic registration failed',
+          message: error.response?.data?.error?.message ||
+            error.message ||
+            'Clinic registration failed',
           code: error.response?.status || 500
         },
         success: false
@@ -210,9 +210,9 @@ export const checkVeterinarianVerification = createAsyncThunk(
       }
 
       return {
-        isVerified: response.isVerified,
-        message: response.message,
-        veterinarianData: response.veterinarian
+        isVerified: response.data.profile.isVerified,
+        message: response.data.profile.message,
+        veterinarianData: response.data.profile.veterinarian
       };
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message || 'Verification check failed');
@@ -247,6 +247,56 @@ export const checkClinicVerification = createAsyncThunk(
   }
 );
 
+export const veterinarianProfileData = createAsyncThunk(
+  'auth/veterinarianProfile',
+  async (_, { rejectWithValue }) => {
+    try {
+      const userId = await AsyncStorage.getItem('userId')
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+      const response = await authAPI.veterinarianCheck(userId);
+      if (!response.success) {
+        return rejectWithValue(response.message || 'Failed to fetch profile data');
+      }
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Failed to load profile data');
+    }
+  }
+);
+
+export const getAllVerifiedClinics = createAsyncThunk(
+  'auth/getAllVerifiedClinics',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await authAPI.getAllVerifiedClinics();
+      if (!response.success) {
+        return rejectWithValue(response.message || 'Failed to fetch clinics');
+      }
+      return response.data; // Assuming response.data contains the clinics array
+    } catch (error) {
+      return rejectWithValue(error.message || 'Failed to load clinics data');
+    }
+  }
+);
+
+export const petResortDetail = createAsyncThunk(
+  'auth/petResort',
+  async (resortdetail, { rejectWithValue }) => {
+    try {
+      console.log(resortdetail)
+      const response = await authAPI.petResort(resortdetail);
+      if (!response.success) {
+        return rejectWithValue(response.message || 'Failed to fetch profile data');
+      }
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Failed to load profile data');
+    }
+  }
+);
+
 const initialState = {
   user: null,
   token: null,
@@ -257,7 +307,17 @@ const initialState = {
   signUpSuccess: false,
   veterinarianVerification: null,
   clinicVerification: null,
-  clinicRegistrationStatus: null
+  clinicRegistrationStatus: null,
+  veterinarianProfile: {
+    loading: false,
+    error: null,
+    data: null
+  },
+  verifiedClinics: {
+    loading: false,
+    error: null,
+    data: null
+  }
 };
 
 const authSlice = createSlice({
@@ -272,6 +332,7 @@ const authSlice = createSlice({
       state.error = null;
       state.veterinarianVerification = null;
       state.clinicVerification = null;
+      state.veterinarianProfile = initialState.veterinarianProfile;
     },
     clearError: (state) => {
       state.error = null;
@@ -281,6 +342,9 @@ const authSlice = createSlice({
     },
     resetClinicRegistration: (state) => {
       state.clinicRegistrationStatus = null;
+    },
+    clearVeterinarianProfile: (state) => {
+      state.veterinarianProfile = initialState.veterinarianProfile;
     }
   },
   extraReducers: (builder) => {
@@ -391,6 +455,52 @@ const authSlice = createSlice({
       .addCase(checkClinicVerification.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
+      })
+
+      // Veterinarian Profile Data
+      .addCase(veterinarianProfileData.pending, (state) => {
+        state.veterinarianProfile = {
+          ...state.veterinarianProfile,
+          loading: true,
+          error: null
+        };
+      })
+      .addCase(veterinarianProfileData.fulfilled, (state, action) => {
+        state.veterinarianProfile = {
+          loading: false,
+          error: null,
+          data: action.payload.data
+        };
+      })
+      .addCase(veterinarianProfileData.rejected, (state, action) => {
+        state.veterinarianProfile = {
+          ...state.veterinarianProfile,
+          loading: false,
+          error: action.payload
+        };
+      })
+
+      // Get All Verified Clinics
+      .addCase(getAllVerifiedClinics.pending, (state) => {
+        state.verifiedClinics = {
+          ...state.verifiedClinics,
+          loading: true,
+          error: null
+        };
+      })
+      .addCase(getAllVerifiedClinics.fulfilled, (state, action) => {
+        state.verifiedClinics = {
+          loading: false,
+          error: null,
+          data: action.payload
+        };
+      })
+      .addCase(getAllVerifiedClinics.rejected, (state, action) => {
+        state.verifiedClinics = {
+          ...state.verifiedClinics,
+          loading: false,
+          error: action.payload
+        };
       });
   },
 });
@@ -406,6 +516,7 @@ export const {
   signOut,
   clearError,
   updateUser,
-  resetClinicRegistration
+  resetClinicRegistration,
+  clearVeterinarianProfile
 } = authSlice.actions;
 export default authSlice.reducer;

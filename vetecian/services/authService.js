@@ -1,8 +1,6 @@
-// Real API service for authentication with Express/MongoDB backend
-
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_BASE_URL = 'http://192.168.101.3:3000/api'; // Update thicd s to your backend URL
+const API_BASE_URL = 'http://192.168.218.232:3000/api'; // Update thicd s to your backend URL
 
 // Helper function to handle API responses
 const handleResponse = async (response) => {
@@ -126,15 +124,44 @@ export const authAPI = {
         userId
       }),
     });
+  },
 
+  // profile veterinarian
+  profileVeterinarian: async () => {
+    const userId = await AsyncStorage.getItem('userId');
+    if (!userId) throw new Error('User not authenticated');
+
+    return await apiRequest('/auth/veterinarian/profile-screen', {
+      method: 'POST',
+      body: JSON.stringify({
+        userId
+      }),
+    });
   },
 
   // veterinarian check
   veterinarianCheck: async (userId) => {
     try {
-      return await apiRequest('/auth/check-veterinarian-verification', {
+      return await apiRequest('/auth/veterinarian/profile-screen', {
         method: 'POST',
         body: JSON.stringify({ userId }),
+      });
+    } catch (error) {
+      console.error('Error checking verification:', error);
+      throw error;
+    }
+  },
+
+  // pet resort detail
+  petResort: async (resortdetail) => {
+    try {
+      const userId = await AsyncStorage.getItem('userId')
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+      return await apiRequest('/auth/petresort/register', {
+        method: 'POST',
+        body: JSON.stringify({ ...resortdetail, userId }),
       });
     } catch (error) {
       console.error('Error checking verification:', error);
@@ -168,6 +195,13 @@ export const authAPI = {
       console.error('Error in pet registration:', error);
       throw error; // Re-throw the error for handling in the calling function
     }
+  },
+
+  // Verified clinics for pet parents
+  getAllVerifiedClinics: async () => {
+    return await apiRequest('/auth/petparent/verified/all-clinic', {
+      method: 'POST',
+    });
   },
 
   // Refresh Token
@@ -247,6 +281,7 @@ export const authAPI = {
       method: 'GET',
     });
   },
+
 };
 
 // Export API base URL for use in other parts of the app

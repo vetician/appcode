@@ -3,6 +3,7 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import Home from '../../../components/petparent/home/Home';
 import PetDetail from '../../../components/petparent/home/PetDetail'
 import ParentDetail from '../onboarding/parent_detail'
+import ClinicListScreen from '../pages/ClinicListScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -30,6 +31,11 @@ export default function AppDrawer() {
         name="ParentDetail"
         component={ParentDetail}
         options={{ headerShown: false, title: 'Parent Details' }}
+      />
+      <Drawer.Screen
+        name="ClinicList"
+        component={ClinicListScreen}
+        options={{ headerShown: false, title: 'Find Clinics' }}
       />
     </Drawer.Navigator>
   );

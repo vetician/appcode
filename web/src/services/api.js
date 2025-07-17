@@ -7,7 +7,7 @@ class ApiService {
 
   async request(endpoint, options = {}) {
     const token = localStorage.getItem('token');
-    
+
     const config = {
       headers: {
         'Content-Type': 'application/json',
@@ -68,6 +68,32 @@ class ApiService {
 
   async verifyClinic(clinicId) {
     return this.request(`/admin/clinic/verify/${clinicId}`, {
+      method: 'POST',
+    });
+  }
+
+  // Pet Resort endpoints
+  async getVerifiedPetResorts(filters = {}) {
+    const params = new URLSearchParams(filters);
+    return this.request(`/admin/verified/petresort?${params}`, {
+      method: 'POST',
+    });
+  }
+
+  async getUnverifiedPetResorts() {
+    return this.request('/admin/unverified/petresort', {
+      method: 'POST',
+    });
+  }
+
+  async verifyPetResort(resortId) {
+    return this.request(`/admin/petresort/verify/${resortId}`, {
+      method: 'POST',
+    });
+  }
+
+  async unverifyPetResort(resortId) {
+    return this.request(`/admin/petresort/unverify/${resortId}`, {
       method: 'POST',
     });
   }

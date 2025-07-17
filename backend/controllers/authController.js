@@ -6,6 +6,7 @@ const Clinic = require('../models/Clinic');
 const Veterinarian = require('../models/Veterinarian');
 const { AppError } = require('../utils/appError');
 const { catchAsync } = require('../utils/catchAsync');
+const PetResort = require('../models/PetResort');
 
 
 // Generate JWT tokens
@@ -30,8 +31,8 @@ const register = catchAsync(async (req, res, next) => {
   const { name, email, password, role = 'vetician' } = req.body;
   console.log(req.body);
 
-  // Validate role
-  if (role && !['veterinarian', 'vetician'].includes(role)) {
+  // Updated role validation
+  if (role && !['veterinarian', 'vetician', 'peravet', 'pet_resort'].includes(role)) {
     return next(new AppError('Invalid role specified', 400));
   }
 
@@ -71,7 +72,7 @@ const register = catchAsync(async (req, res, next) => {
     message: 'User registered successfully',
     user: {
       ...user.getPublicProfile(),
-      role: user.role // Explicitly include role in response
+      role: user.role
     },
     token: accessToken,
     refreshToken,
@@ -83,14 +84,19 @@ const login = catchAsync(async (req, res, next) => {
   const { email, password, loginType } = req.body;
   console.log(req.body)
 
+  // Updated to accept new roles
+  if (!['veterinarian', 'vetician', 'peravet', 'pet_resort'].includes(loginType)) {
+    return next(new AppError('Invalid login type specified', 400));
+  }
+
   // Find user and include password for comparison
   const user = await User.findByEmailAndRole(email, loginType).select('+password');
   if (!user) {
     return next(new AppError('Invalid email or password', 401));
   }
 
-  // Verify role matches login type (if loginType is provided)
-  if (loginType && user.role !== loginType) {
+  // Verify role matches login type
+  if (user.role !== loginType) {
     return next(new AppError(`Please login as ${user.role}`, 401));
   }
 
@@ -120,7 +126,7 @@ const login = catchAsync(async (req, res, next) => {
     message: 'Login successful',
     user: {
       ...user.getPublicProfile(),
-      role: user.role // Explicitly include role in response
+      role: user.role
     },
     token: accessToken,
     refreshToken,
@@ -159,6 +165,9 @@ const registerParent = catchAsync(async (req, res, next) => {
     refreshToken,
   });
 });
+
+
+
 
 
 
@@ -240,7 +249,6 @@ const registerVeterinarian = catchAsync(async (req, res, next) => {
 // check veterinarian verification
 const checkVeterinarianVerification = catchAsync(async (req, res, next) => {
   const { userId } = req.body;
-  console.log(req.body)
 
   // Check if userId exists in the request
   if (!userId) {
@@ -472,7 +480,7 @@ const getUnverifiedClinics = catchAsync(async (req, res, next) => {
 });
 
 // get verified clinics (admin)
-const getVerifiedClinics = catchAsync(async (req, res, next) => {
+const getVerifiedClinics = catchAsync(async (req, res, next) => {cd   
   const filter = { verified: true };
   if (req.query.city) filter.city = req.query.city;
   if (req.query.establishmentType) filter.establishmentType = req.query.establishmentType;
@@ -545,6 +553,57 @@ const verifyClinic = catchAsync(async (req, res, next) => {
     }
   });
 });
+
+// get profile screen data
+const getProfileDetails = catchAsync(async (req, res, next) => {
+  const { userId } = req.body;
+  console.log(req.body)
+
+  if (!userId) {
+    return next(new AppError('User ID is required', 400));
+  }
+
+  // Find veterinarian and clinic data in parallel
+  const [veterinarian, clinics] = await Promise.all([
+    Veterinarian.findOne({userId}),
+    Clinic.find({userId})
+  ]);
+
+  // console.log(veterinarian, clinics)
+
+  if (!veterinarian) {
+    return next(new AppError('No veterinarian found with that user ID', 404));
+  }
+
+  // Format the response similar to your example image
+  const profileData = {
+    status: 'Your profile is under review',
+    message: 'Please give us 7 business days from the date of submission to review your profile',
+    profile: {
+      name: `${veterinarian.title.value} ${veterinarian.name.value}`,
+      specialization: veterinarian.specialization.value,
+      qualification: veterinarian.qualification.value,
+      experience: `${veterinarian.experience.value} years of experience`,
+      registration: veterinarian.registration.value,
+      additionalCertification: 'Arizona State Board of Dental Examiners-2003', // This would come from your data
+      profilePhotoUrl: veterinarian.profilePhotoUrl.value,
+      isVerified: veterinarian.isVerified
+    },
+    clinics: clinics.map(clinic => ({
+      clinicName: clinic.clinicName,
+      address: clinic.streetAddress || `${clinic.locality}, ${clinic.city}`,
+      verified: clinic.verified
+    }))
+  };
+
+  res.status(200).json({
+    success: true,
+    data: profileData
+  });
+});
+
+
+
 
 
 
@@ -661,6 +720,284 @@ const logoutAll = catchAsync(async (req, res, next) => {
 });
 
 
+
+
+
+
+// pet resort detail
+const createPetResort = catchAsync(async (req, res, next) => {
+  const { 
+    userId,
+    resortName, 
+    brandName, 
+    address, 
+    resortPhone, 
+    ownerPhone, 
+    services, 
+    openingHours, 
+    notice 
+  } = req.body;
+  console.log(req.body);
+
+  // Check if resort already exists for this user
+  const existingResort = await PetResort.findOne({ userId: userId });
+  if (existingResort) {
+    return next(new AppError('You already have a pet resort registered', 400));
+  }
+
+  // Handle logo upload (assuming Cloudinary URL is in req.body.logo)
+  if (!req.body.logo) {
+    return next(new AppError('Resort logo is required', 400));
+  }
+
+  // Create new pet resort
+  const petResort = new PetResort({
+    userId: userId,
+    resortName: resortName.trim(),
+    brandName: brandName.trim(),
+    logo: req.body.logo,
+    address: address.trim(),
+    resortPhone: resortPhone.trim(),
+    ownerPhone: ownerPhone.trim(),
+    services,
+    openingHours,
+    notice: notice ? notice.trim() : undefined
+  });
+
+  await petResort.save();
+
+  // Generate tokens
+  const { accessToken, refreshToken } = generateTokens(petResort._id);
+
+  res.status(201).json({
+    success: true,
+    message: 'Pet resort created successfully',
+    petResort: {
+      id: petResort._id,
+      resortName: petResort.resortName,
+      brandName: petResort.brandName,
+      logo: petResort.logo,
+      services: petResort.services,
+      isVerified: petResort.isVerified
+    },
+    token: accessToken,
+    refreshToken
+  });
+});
+
+// Get unverified pet resorts (admin)
+const getUnverifiedPetResorts = catchAsync(async (req, res, next) => {
+  const petResorts = await PetResort.find({ isVerified: false })
+    .lean();
+
+  // Get all unique user IDs from pet resorts
+  const userIds = [...new Set(petResorts.map(r => r.userId))];
+
+  // Get all related users in one query
+  const users = await User.find({
+    _id: { $in: userIds }
+  }).lean();
+
+  // Create a map of userId -> user
+  const userMap = new Map();
+  users.forEach(user => {
+    userMap.set(user._id.toString(), {
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      profilePhoto: user.profilePhoto
+    });
+  });
+
+  const formattedPetResorts = petResorts.map(resort => ({
+    ...resort, // Preserve all pet resort properties
+    user: userMap.get(resort.userId.toString()) || null
+  }));
+
+  res.status(200).json({
+    success: true,
+    count: formattedPetResorts.length,
+    petResorts: formattedPetResorts
+  });
+});
+
+// Get verified pet resorts (admin)
+const getVerifiedPetResorts = catchAsync(async (req, res, next) => {
+  const filter = { isVerified: true };
+  
+  // Add optional filters from query params
+  if (req.query.city) filter.city = req.query.city;
+  if (req.query.services) filter.services = { $in: req.query.services.split(',') };
+
+  const petResorts = await PetResort.find(filter)
+    .lean();
+
+  // Get all unique user IDs from pet resorts
+  const userIds = [...new Set(petResorts.map(r => r.userId))];
+
+  // Get all related users in one query
+  const users = await User.find({
+    _id: { $in: userIds }
+  }).lean();
+
+  // Create a map of userId -> user
+  const userMap = new Map();
+  users.forEach(user => {
+    userMap.set(user._id.toString(), {
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      profilePhoto: user.profilePhoto
+    });
+  });
+
+  const formattedPetResorts = petResorts.map(resort => ({
+    ...resort, // Preserve all pet resort properties
+    user: userMap.get(resort.userId.toString()) || null
+  }));
+
+  res.status(200).json({
+    success: true,
+    count: formattedPetResorts.length,
+    petResorts: formattedPetResorts
+  });
+});
+
+// Verify pet resort (admin)
+const verifyPetResort = catchAsync(async (req, res, next) => {
+  const { resortId } = req.params;
+
+  // Find the pet resort
+  const petResort = await PetResort.findById(resortId);
+  if (!petResort) {
+    return next(new AppError('Pet resort not found', 404));
+  }
+
+  // Check if already verified
+  if (petResort.isVerified) {
+    return next(new AppError('Pet resort is already verified', 400));
+  }
+
+  // Mark the pet resort as verified
+  petResort.isVerified = true;
+  await petResort.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Pet resort verified successfully',
+    petResort: {
+      _id: petResort._id,
+      isVerified: petResort.isVerified
+    }
+  });
+});
+
+// Unverify pet resort (admin)
+const unverifyPetResort = catchAsync(async (req, res, next) => {
+  const { resortId } = req.params;
+
+  // Find the pet resort
+  const petResort = await PetResort.findById(resortId);
+  if (!petResort) {
+    return next(new AppError('Pet resort not found', 404));
+  }
+
+  // Check if already unverified
+  if (!petResort.isVerified) {
+    return next(new AppError('Pet resort is already unverified', 400));
+  }
+
+  // Mark the pet resort as unverified
+  petResort.isVerified = false;
+  await petResort.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Pet resort unverified successfully',
+    petResort: {
+      _id: petResort._id,
+      isVerified: petResort.isVerified
+    }
+  });
+});
+
+
+
+
+// veterinarian's clinic for pet parent
+const getAllClinicsWithVets = catchAsync(async (req, res, next) => {
+  // 1. Fetch all verified clinics
+  const clinics = await Clinic.find({ verified: true }).lean();
+  
+  if (!clinics || clinics.length === 0) {
+    return next(new AppError('No verified clinics found', 404));
+  }
+
+  // 2. Get all unique user IDs from clinics
+  const userIds = [...new Set(clinics.map(clinic => clinic.userId))];
+
+  // 3. Fetch all veterinarians associated with these clinics
+  const veterinarians = await Veterinarian.find({ 
+    userId: { $in: userIds } 
+  }).lean();
+  
+  // 4. Create a map of userId -> veterinarian for quick lookup
+  const vetMap = veterinarians.reduce((map, vet) => {
+    map[vet.userId] = vet;
+    return map;
+  }, {});
+  
+  // 5. Combine clinic and veterinarian data
+  const responseData = clinics.map(clinic => {
+    const vet = vetMap[clinic.userId] || null;
+    
+    return {
+      clinicDetails: {
+        establishmentType: clinic.establishmentType,
+        clinicName: clinic.clinicName,
+        city: clinic.city,
+        locality: clinic.locality,
+        streetAddress: clinic.streetAddress,
+        fees: clinic.fees,
+        timings: clinic.timings,
+        verified: clinic.verified,
+        clinicId: clinic._id
+      },
+      veterinarianDetails: vet ? {
+        title: vet.title.value,
+        name: vet.name.value,
+        gender: vet.gender.value,
+        city: vet.city.value,
+        experience: vet.experience.value,
+        specialization: vet.specialization.value,
+        profilePhotoUrl: vet.profilePhotoUrl.value,
+        isVerified: vet.isVerified,
+        vetId: vet._id
+      } : null
+    };
+  });
+  console.log(responseData)
+
+  res.status(200).json({
+    success: true,
+    count: responseData.length,
+    data: responseData
+  });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 module.exports = {
   register,
   login,
@@ -677,5 +1014,12 @@ module.exports = {
   registerClinic,
   getUnverifiedClinics,
   getVerifiedClinics,
-  verifyClinic
+  verifyClinic,
+  getProfileDetails,
+  createPetResort,
+  getUnverifiedPetResorts,
+  getVerifiedPetResorts,
+  verifyPetResort,
+  unverifyPetResort,
+  getAllClinicsWithVets
 };

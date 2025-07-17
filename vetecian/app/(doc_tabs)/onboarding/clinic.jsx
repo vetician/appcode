@@ -27,12 +27,12 @@ export default function AddClinic() {
       }
 
       console.log('[handleClinic] Dispatching checkVeterinarianVerification action...');
-      const resultAction = await dispatch(checkVeterinarianVerification());
+      const resultAction = await dispatch(checkVeterinarianVerification()).unwrap();
       console.log('[handleClinic] Action dispatch result:', resultAction);
 
-      if (checkVeterinarianVerification.fulfilled.match(resultAction)) {
+      // if (checkVeterinarianVerification.fulfilled.match(resultAction)) {
         console.log('[handleClinic] Verification check successful');
-        const { isVerified, message } = resultAction.payload;
+        const { isVerified, message } = resultAction;
         console.log(`[handleClinic] Verification status - isVerified: ${isVerified}, message: ${message}`);
 
         if (isVerified) {
@@ -64,16 +64,16 @@ export default function AddClinic() {
                 text: 'OK',
                 onPress: () => {
                   console.log('[handleClinic] Navigating to VerificationStatus screen');
-                  navigation.navigate('VerificationStatus');
+                  // navigation.navigate('VerificationStatus');
                 }
               }
             ]
           );
         }
-      } else if (checkVeterinarianVerification.rejected.match(resultAction)) {
-        console.error('[handleClinic] Verification check failed:', resultAction.error);
-        throw new Error(resultAction.error.message || 'Verification check failed');
-      }
+      // } else if (checkVeterinarianVerification.rejected.match(resultAction)) {
+      //   console.error('[handleClinic] Verification check failed:', resultAction.error);
+      //   throw new Error(resultAction.error.message || 'Verification check failed');
+      // }
     } catch (error) {
       console.error('[handleClinic] Error in verification process:', {
         error: error.message,

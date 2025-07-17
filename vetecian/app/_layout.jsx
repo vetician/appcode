@@ -25,6 +25,8 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(vetician_tabs)" />
           <Stack.Screen name="(doc_tabs)" />
+          <Stack.Screen name="(peravet_tabs)" />
+          <Stack.Screen name="(pet_resort_tabs)" />
           <Stack.Screen name="+not-found" />
         </Stack>
         <StatusBar style="auto" />

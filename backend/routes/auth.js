@@ -16,7 +16,14 @@ const {
   registerClinic,
   getUnverifiedClinics,
   getVerifiedClinics,
-  verifyClinic
+  verifyClinic,
+  getProfileDetails,
+  createPetResort,
+  getUnverifiedPetResorts,
+  getVerifiedPetResorts,
+  verifyPetResort,
+  unverifyPetResort,
+  getAllClinicsWithVets
 } = require('../controllers/authController');
 const { auth, protect } = require('../middleware/auth');
 const { validate } = require('../middleware/validation');
@@ -77,6 +84,20 @@ router.post('/register-clinic', registerClinic);
 router.post('/admin/unverified/clinic', getUnverifiedClinics);
 router.post('/admin/verified/clinic', getVerifiedClinics);
 router.post('/admin/clinic/verify/:clinicId', verifyClinic);
+router.post('/veterinarian/profile-screen', getProfileDetails);
+
+
+router.post('/petresort/register', createPetResort);
+router.post('/admin/verified/petresort', getVerifiedPetResorts);
+router.post('/admin/unverified/petresort', getUnverifiedPetResorts);
+router.post('/admin/petresort/verify/:resortId', verifyPetResort);
+router.post('/admin/petresort/unverify/:resortId', unverifyPetResort);
+
+
+
+router.post('/petparent/verified/all-clinic', getAllClinicsWithVets);
+
+
 
 router.post('/refresh-token', refreshToken);
 router.post('/logout', auth, logout);
