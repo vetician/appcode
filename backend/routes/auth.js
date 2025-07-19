@@ -23,7 +23,8 @@ const {
   getVerifiedPetResorts,
   verifyPetResort,
   unverifyPetResort,
-  getAllClinicsWithVets
+  getAllClinicsWithVets,
+  createAppointment
 } = require('../controllers/authController');
 const { auth, protect } = require('../middleware/auth');
 const { validate } = require('../middleware/validation');
@@ -72,8 +73,10 @@ const loginValidation = [
 // Routes
 router.post('/register', registerValidation, validate, register);
 router.post('/login', loginValidation, validate, login);
+
 router.post('/parent-register', registerParent);
 router.post('/pet-register', createPet);
+router.post('/petparent/appointments/book', createAppointment);
 
 router.post('/veterinarian-register', registerVeterinarian);
 router.post('/admin/verified', getVerifiedVeterinarians);

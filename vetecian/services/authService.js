@@ -204,6 +204,24 @@ export const authAPI = {
     });
   },
 
+  // Appointment Booking
+  bookAppointment: async (bookingData) => {
+    const userId = await AsyncStorage.getItem('userId');
+    if (!userId) throw new Error('User not authenticated');
+
+    return await authService.apiRequest('/auth/petparent/appointments/book', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...bookingData,
+        userId
+      }),
+    });
+  },
+
+
+
+
+
   // Refresh Token
   refreshToken: async (refreshToken) => {
     return await apiRequest('/auth/refresh-token', {

@@ -297,6 +297,23 @@ export const petResortDetail = createAsyncThunk(
   }
 );
 
+export const bookAppointment = createAsyncThunk(
+  'auth/bookAppointment',
+  async (bookingData, { rejectWithValue }) => {
+    try {
+      const response = await authAPI.bookAppointment(bookingData);
+      
+      if (!response.success) {
+        return rejectWithValue(response.message || 'Booking failed');
+      }
+
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message || 'Booking failed');
+    }
+  }
+);
+
 const initialState = {
   user: null,
   token: null,
@@ -317,6 +334,12 @@ const initialState = {
     loading: false,
     error: null,
     data: null
+  },
+  bookingStatus: {
+    loading: false,
+    error: null,
+    success: false,
+    data: null
   }
 };
 
@@ -333,6 +356,7 @@ const authSlice = createSlice({
       state.veterinarianVerification = null;
       state.clinicVerification = null;
       state.veterinarianProfile = initialState.veterinarianProfile;
+      state.bookingStatus = initialState.bookingStatus;
     },
     clearError: (state) => {
       state.error = null;
@@ -345,6 +369,9 @@ const authSlice = createSlice({
     },
     clearVeterinarianProfile: (state) => {
       state.veterinarianProfile = initialState.veterinarianProfile;
+    },
+    resetBookingStatus: (state) => {
+      state.bookingStatus = initialState.bookingStatus;
     }
   },
   extraReducers: (builder) => {
@@ -501,6 +528,32 @@ const authSlice = createSlice({
           loading: false,
           error: action.payload
         };
+      })
+
+      // Book Appointment
+      .addCase(bookAppointment.pending, (state) => {
+        state.bookingStatus = {
+          loading: true,
+          error: null,
+          success: false,
+          data: null
+        };
+      })
+      .addCase(bookAppointment.fulfilled, (state, action) => {
+        state.bookingStatus = {
+          loading: false,
+          error: null,
+          success: true,
+          data: action.payload
+        };
+      })
+      .addCase(bookAppointment.rejected, (state, action) => {
+        state.bookingStatus = {
+          loading: false,
+          error: action.payload,
+          success: false,
+          data: null
+        };
       });
   },
 });
@@ -517,6 +570,7 @@ export const {
   clearError,
   updateUser,
   resetClinicRegistration,
-  clearVeterinarianProfile
+  clearVeterinarianProfile,
+  resetBookingStatus
 } = authSlice.actions;
 export default authSlice.reducer;

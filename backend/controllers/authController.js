@@ -7,6 +7,7 @@ const Veterinarian = require('../models/Veterinarian');
 const { AppError } = require('../utils/appError');
 const { catchAsync } = require('../utils/catchAsync');
 const PetResort = require('../models/PetResort');
+const Appointment = require('../models/Appointment');
 
 
 // Generate JWT tokens
@@ -985,8 +986,90 @@ const getAllClinicsWithVets = catchAsync(async (req, res, next) => {
   });
 });
 
+// Appointment Booking
+const createAppointment = catchAsync(async (req, res, next) => {
+  // 1. Extract data from request body
+  const {
+    clinicId,
+    veterinarianId,
+    petName,
+    petType,
+    breed,
+    illness,
+    date,
+    bookingType,
+    contactInfo,
+    petPic
+  } = req.body;
+  console.log(req.body)
 
+  // 2. Get user ID from authenticated user
+  const userId = req.user._id;
 
+  // 3. Validate clinic exists
+  const clinic = await Clinic.findById(clinicId);
+  if (!clinic) {
+    return next(new AppError('No clinic found with that ID', 404));
+  }
+
+  // 4. Validate veterinarian exists if provided
+  if (veterinarianId) {
+    const veterinarian = await Veterinarian.findById(veterinarianId);
+    if (!veterinarian) {
+      return next(new AppError('No veterinarian found with that ID', 404));
+    }
+  }
+
+  // 5. Create new appointment
+  const newAppointment = await Appointment.create({
+    clinicId,
+    veterinarianId,
+    userId,
+    petName,
+    petType,
+    breed,
+    illness,
+    date: new Date(date),
+    bookingType,
+    contactInfo,
+    petPic,
+    status: 'pending' // Default status
+  });
+
+  // 6. Format the response data similar to your clinic/vet format
+  const responseData = {
+    appointmentDetails: {
+      _id: newAppointment._id,
+      petName: newAppointment.petName,
+      petType: newAppointment.petType,
+      breed: newAppointment.breed,
+      illness: newAppointment.illness,
+      date: newAppointment.date,
+      bookingType: newAppointment.bookingType,
+      status: newAppointment.status,
+      createdAt: newAppointment.createdAt
+    },
+    clinicDetails: {
+      clinicName: clinic.clinicName,
+      establishmentType: clinic.establishmentType,
+      city: clinic.city,
+      locality: clinic.locality,
+      streetAddress: clinic.streetAddress,
+      fees: clinic.fees,
+      timings: clinic.timings
+    },
+    veterinarianDetails: veterinarianId ? {
+      name: veterinarian.name,
+      specialization: veterinarian.specialization,
+      profilePhotoUrl: veterinarian.profilePhotoUrl
+    } : null
+  };
+
+  res.status(201).json({
+    success: true,
+    data: responseData
+  });
+});
 
 
 
@@ -1021,5 +1104,6 @@ module.exports = {
   getVerifiedPetResorts,
   verifyPetResort,
   unverifyPetResort,
-  getAllClinicsWithVets
+  getAllClinicsWithVets,
+  createAppointment
 };

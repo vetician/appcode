@@ -1,13 +1,47 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet, Image } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+  Modal,
+  TextInput,
+  Alert,
+  Pressable,
+  StyleSheet,
+  Platform
+} from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useDispatch } from 'react-redux';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
+import { Camera } from 'lucide-react-native';
+import { X } from 'lucide-react-native';
+import { bookAppointment } from '../../../store/slices/authSlice';
 
 const ClinicDetailScreen = () => {
-  // Use useLocalSearchParams instead of route prop
-  const params = useLocalSearchParams();
-  console.log("Received params:", params);
+  const dispatch = useDispatch();
+  const [modalVisible, setModalVisible] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [bookingType, setBookingType] = useState('in-clinic');
+  const [errors, setErrors] = useState({});
+  const [isUploading, setIsUploading] = useState(false);
+  const [formData, setFormData] = useState({
+    petName: '',
+    petType: '',
+    breed: '',
+    illness: '',
+    date: new Date(),
+    contactInfo: '',
+    petPic: null,
+  });
 
+  const speciesOptions = ['Dog', 'Cat', 'Bird', 'Fish', 'Rabbit', 'Hamster', 'Other'];
+
+  const params = useLocalSearchParams();
   let clinic;
   try {
     clinic = params?.clinic ? JSON.parse(params.clinic) : null;
@@ -15,25 +49,153 @@ const ClinicDetailScreen = () => {
     console.error("Error parsing clinic data:", e);
   }
 
-  console.log("Processed clinic data:", clinic);
-  
-  if (!clinic?.clinicDetails) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Clinic data not available</Text>
-        <Text style={styles.errorDetails}>
-          Received params: {JSON.stringify(params)}
-        </Text>
-      </View>
-    );
-  }
-  
-  const clinicDetails = clinic.clinicDetails;
-  const vetDetails = clinic.veterinarianDetails;
+  const handleInputChange = (name, value) => {
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+    // Clear error when user types
+    if (errors[name]) {
+      setErrors({
+        ...errors,
+        [name]: null,
+      });
+    }
+  };
+
+  const handleDateChange = (event, selectedDate) => {
+    const currentDate = selectedDate || formData.date;
+    setShowDatePicker(Platform.OS === 'ios');
+    setFormData({
+      ...formData,
+      date: currentDate,
+    });
+  };
+
+  const handlePetPhotoUpload = async () => {
+    // Request permissions
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission required', 'We need access to your photos to upload pet images');
+      return;
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      handleInputChange('petPic', result.assets[0].uri);
+    }
+  };
+
+  const removePetPhoto = () => {
+    handleInputChange('petPic', null);
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.petName) newErrors.petName = 'Pet name is required';
+    if (!formData.petType) newErrors.petType = 'Pet type is required';
+    if (!formData.contactInfo) newErrors.contactInfo = 'Contact info is required';
+    if (!formData.petPic) newErrors.petPic = 'Pet photo is required';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Upload image to Cloudinary
+  const uploadToCloudinary = async (imageUri) => {
+    try {
+      const fileInfo = await FileSystem.getInfoAsync(imageUri);
+      if (!fileInfo.exists) throw new Error('File not found');
+
+      const formData = new FormData();
+      formData.append('file', {
+        uri: imageUri,
+        name: `pet_${Date.now()}.jpg`,
+        type: 'image/jpeg'
+      });
+      formData.append('upload_preset', 'vetician');
+      formData.append('cloud_name', 'dqwzfs4ox');
+
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/dqwzfs4ox/image/upload`,
+        { method: 'POST', body: formData }
+      );
+
+      const data = await response.json();
+      return data.secure_url;
+    } catch (error) {
+      console.error('Cloudinary upload failed:', error);
+      throw new Error('Failed to upload pet image');
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+
+    setIsUploading(true);
+    
+    try {
+      // First upload the pet image to Cloudinary
+      let petImageUrl = '';
+      if (formData.petPic) {
+        petImageUrl = await uploadToCloudinary(formData.petPic);
+      }
+
+      const bookingData = {
+        clinicId: clinic.clinicDetails.clinicId,
+        veterinarianId: clinic.veterinarianDetails?.vetId,
+        petName: formData.petName.trim(),
+        petType: formData.petType.trim(),
+        breed: formData.breed.trim(),
+        illness: formData.illness.trim(),
+        date: formData.date.toISOString(),
+        bookingType,
+        contactInfo: formData.contactInfo.trim(),
+        petPic: petImageUrl, // Use the Cloudinary URL here
+      };
+      
+      console.log("bookingData =>", bookingData);
+
+      const result = await dispatch(bookAppointment(bookingData)).unwrap();
+
+      if (result.success) {
+        Alert.alert(
+          'Success',
+          'Your appointment has been booked successfully!',
+          [{
+            text: 'OK', onPress: () => {
+              setModalVisible(false);
+              setFormData({
+                petName: '',
+                petType: '',
+                breed: '',
+                illness: '',
+                date: new Date(),
+                contactInfo: '',
+                petPic: null,
+              });
+              setErrors({});
+            }
+          }]
+        );
+      }
+    } catch (error) {
+      Alert.alert('Error', error.message || 'An error occurred while booking the appointment');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const renderTimings = () => {
-    if (!clinicDetails.timings) return null;
-    
+    if (!clinic?.clinicDetails?.timings) return null;
+
     const days = [
       { key: 'mon', label: 'Monday' },
       { key: 'tue', label: 'Tuesday' },
@@ -45,7 +207,7 @@ const ClinicDetailScreen = () => {
     ];
 
     return days.map(day => {
-      const timing = clinicDetails.timings[day.key];
+      const timing = clinic.clinicDetails.timings[day.key];
       if (!timing || !timing.start) return null;
 
       return (
@@ -62,102 +224,323 @@ const ClinicDetailScreen = () => {
     });
   };
 
+  if (!clinic?.clinicDetails) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>Clinic data not available</Text>
+      </View>
+    );
+  }
+
+  const clinicDetails = clinic.clinicDetails;
+  const vetDetails = clinic.veterinarianDetails;
+
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.clinicName}>{clinicDetails.clinicName}</Text>
-        <View style={styles.verifiedBadge}>
-          <MaterialIcons
-            name="verified"
-            size={18}
-            color={clinicDetails.verified ? "#4E8D7C" : "#E67C00"}
-          />
-          <Text style={styles.verifiedText}>
-            {clinicDetails.verified ? "Verified Clinic" : "Verification Pending"}
-          </Text>
-        </View>
+    <View style={styles.fullContainer}>
+      <View style={styles.headerContainer}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <MaterialIcons name="arrow-back" size={24} color="#4E8D7C" />
+        </TouchableOpacity>
       </View>
 
-      <Text style={styles.establishmentType}>
-        {clinicDetails.establishmentType}
-      </Text>
-
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <MaterialIcons name="location-on" size={20} color="#4E8D7C" />
-          <Text style={styles.sectionTitle}>Address</Text>
+      <ScrollView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.clinicName}>{clinicDetails.clinicName}</Text>
+          <View style={styles.verifiedBadge}>
+            <MaterialIcons
+              name="verified"
+              size={18}
+              color={clinicDetails.verified ? "#4E8D7C" : "#E67C00"}
+            />
+            <Text style={styles.verifiedText}>
+              {clinicDetails.verified ? "Verified Clinic" : "Verification Pending"}
+            </Text>
+          </View>
         </View>
-        <Text style={styles.address}>
-          {clinicDetails.streetAddress || 'Address not specified'}
-        </Text>
-        <Text style={styles.location}>
-          {clinicDetails.locality}, {clinicDetails.city}
-        </Text>
-      </View>
 
-      {vetDetails && (
+        <Text style={styles.establishmentType}>
+          {clinicDetails.establishmentType}
+        </Text>
+
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <MaterialIcons name="person" size={20} color="#4E8D7C" />
-            <Text style={styles.sectionTitle}>Veterinarian</Text>
+            <MaterialIcons name="location-on" size={20} color="#4E8D7C" />
+            <Text style={styles.sectionTitle}>Address</Text>
           </View>
+          <Text style={styles.address}>
+            {clinicDetails.streetAddress || 'Address not specified'}
+          </Text>
+          <Text style={styles.location}>
+            {clinicDetails.locality}, {clinicDetails.city}
+          </Text>
+        </View>
 
-          <View style={styles.vetContainer}>
-            {vetDetails.profilePhotoUrl ? (
-              <Image
-                source={{ uri: vetDetails.profilePhotoUrl }}
-                style={styles.vetImage}
-              />
-            ) : (
-              <View style={styles.vetPlaceholder}>
-                <MaterialIcons name="person" size={32} color="#4E8D7C" />
+        {vetDetails && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <MaterialIcons name="person" size={20} color="#4E8D7C" />
+              <Text style={styles.sectionTitle}>Veterinarian</Text>
+            </View>
+
+            <View style={styles.vetContainer}>
+              {vetDetails.profilePhotoUrl ? (
+                <Image
+                  source={{ uri: vetDetails.profilePhotoUrl }}
+                  style={styles.vetImage}
+                />
+              ) : (
+                <View style={styles.vetPlaceholder}>
+                  <MaterialIcons name="person" size={32} color="#4E8D7C" />
+                </View>
+              )}
+
+              <View style={styles.vetInfo}>
+                <Text style={styles.vetName}>
+                  {vetDetails.title} {vetDetails.name}
+                </Text>
+                <Text style={styles.vetSpecialty}>
+                  {vetDetails.specialization}
+                </Text>
+                <Text style={styles.vetExperience}>
+                  {vetDetails.experience} years experience
+                </Text>
               </View>
-            )}
+            </View>
+          </View>
+        )}
 
-            <View style={styles.vetInfo}>
-              <Text style={styles.vetName}>
-                {vetDetails.title} {vetDetails.name}
-              </Text>
-              <Text style={styles.vetSpecialty}>
-                {vetDetails.specialization}
-              </Text>
-              <Text style={styles.vetExperience}>
-                {vetDetails.experience} years experience
-              </Text>
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <MaterialIcons name="currency-rupee" size={20} color="#4E8D7C" />
+            <Text style={styles.sectionTitle}>Consultation Fees</Text>
+          </View>
+          <Text style={styles.fees}>
+            ₹{clinicDetails.fees || 'Not specified'}
+          </Text>
+        </View>
+
+        {clinicDetails.timings && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <MaterialIcons name="access-time" size={20} color="#4E8D7C" />
+              <Text style={styles.sectionTitle}>Consultation Hours</Text>
+            </View>
+            {renderTimings()}
+          </View>
+        )}
+      </ScrollView>
+
+      <TouchableOpacity
+        style={styles.bookButton}
+        onPress={() => setModalVisible(true)}
+      >
+        <Text style={styles.bookButtonText}>Book Appointment</Text>
+      </TouchableOpacity>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Book Appointment</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <MaterialIcons name="close" size={24} color="#4E8D7C" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalBody}>
+              <Text style={styles.inputLabel}>Pet Name *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter pet name"
+                value={formData.petName}
+                onChangeText={(text) => handleInputChange('petName', text)}
+              />
+
+              <Text style={styles.inputLabel}>Pet Type *</Text>
+              <View style={styles.optionsContainer}>
+                {speciesOptions.map((option) => (
+                  <TouchableOpacity
+                    key={option}
+                    style={[
+                      styles.optionButton,
+                      formData.petType === option && styles.selectedOption
+                    ]}
+                    onPress={() => handleInputChange('petType', option)}
+                  >
+                    <Text style={[
+                      styles.optionText,
+                      formData.petType === option && styles.selectedOptionText
+                    ]}>
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.inputLabel}>Breed</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter breed"
+                value={formData.breed}
+                onChangeText={(text) => handleInputChange('breed', text)}
+              />
+
+              <Text style={styles.inputLabel}>Illness/Issue</Text>
+              <TextInput
+                style={[styles.input, styles.multilineInput]}
+                placeholder="Describe what's happening with your pet"
+                value={formData.illness}
+                onChangeText={(text) => handleInputChange('illness', text)}
+                multiline
+                numberOfLines={4}
+              />
+
+              <Text style={styles.inputLabel}>Appointment Date *</Text>
+              <Pressable
+                style={styles.dateInput}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Text>{formData.date.toLocaleDateString()}</Text>
+                <MaterialIcons
+                  name="calendar-today"
+                  size={24}
+                  color="#4E8D7C"
+                />
+              </Pressable>
+
+              {showDatePicker && (
+                <DateTimePicker
+                  value={formData.date}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={handleDateChange}
+                  minimumDate={new Date()}
+                  style={styles.datePicker}
+                />
+              )}
+
+              <Text style={styles.inputLabel}>Consultation Type *</Text>
+              <View style={styles.radioGroup}>
+                <TouchableOpacity
+                  style={[
+                    styles.radioButton,
+                    bookingType === 'in-clinic' && styles.radioButtonSelected
+                  ]}
+                  onPress={() => setBookingType('in-clinic')}
+                >
+                  <Text style={[
+                    styles.radioButtonText,
+                    bookingType === 'in-clinic' && styles.radioButtonTextSelected
+                  ]}>
+                    In-Clinic
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.radioButton,
+                    bookingType === 'video' && styles.radioButtonSelected
+                  ]}
+                  onPress={() => setBookingType('video')}
+                >
+                  <Text style={[
+                    styles.radioButtonText,
+                    bookingType === 'video' && styles.radioButtonTextSelected
+                  ]}>
+                    Video Consultation
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.inputLabel}>Contact Info *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Phone number or email"
+                value={formData.contactInfo}
+                onChangeText={(text) => handleInputChange('contactInfo', text)}
+                keyboardType="phone-pad"
+              />
+
+              {/* Pet Photo Section */}
+              <View style={styles.formSection}>
+                <Text style={styles.inputLabel}>Pet Photo*</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.photoUpload,
+                    errors.petPic && styles.uploadError
+                  ]}
+                  onPress={handlePetPhotoUpload}
+                >
+                  {formData.petPic ? (
+                    <>
+                      <Image
+                        source={{ uri: formData.petPic }}
+                        style={styles.uploadedImage}
+                      />
+                      <TouchableOpacity
+                        style={styles.removeButton}
+                        onPress={removePetPhoto}
+                      >
+                        <X size={16} color="#fff" />
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <Camera size={24} color="#4B5563" />
+                      <Text style={styles.photoUploadText}>Upload Photo</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+                {errors.petPic && (
+                  <Text style={styles.errorText}>{errors.petPic}</Text>
+                )}
+              </View>
+
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={handleSubmit}
+                disabled={isUploading}
+              >
+                <Text style={styles.submitButtonText}>
+                  {isUploading ? 'Uploading...' : 'Submit Booking'}
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
-      )}
-
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <MaterialIcons name="attach-money" size={20} color="#4E8D7C" />
-          <Text style={styles.sectionTitle}>Consultation Fees</Text>
-        </View>
-        <Text style={styles.fees}>
-          ₹{clinicDetails.fees || 'Not specified'}
-        </Text>
-      </View>
-
-      {clinicDetails.timings && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <MaterialIcons name="access-time" size={20} color="#4E8D7C" />
-            <Text style={styles.sectionTitle}>Consultation Hours</Text>
-          </View>
-          {renderTimings()}
-        </View>
-      )}
-    </ScrollView>
+      </Modal>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  fullContainer: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
+  },
+  headerContainer: {
+    paddingTop: 55,
+    paddingHorizontal: 16,
+    backgroundColor: '#F8F9FA',
+  },
+  backButton: {
+    padding: 8,
+    marginBottom: 12,
+  },
   container: {
     flex: 1,
     backgroundColor: '#F8F9FA',
     paddingHorizontal: 16,
-    paddingTop: 55,
   },
   header: {
     flexDirection: 'row',
@@ -288,10 +671,203 @@ const styles = StyleSheet.create({
     color: '#7D7D7D',
     fontStyle: 'italic',
   },
-  contact: {
+  errorText: {
+    fontSize: 18,
+    color: 'red',
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  bookButton: {
+    backgroundColor: '#4E8D7C',
+    padding: 16,
+    margin: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bookButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEE',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#2C3E50',
+  },
+  modalBody: {
+    padding: 16,
+  },
+  modalFooter: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#EEE',
+  },
+  inputLabel: {
     fontSize: 16,
+    color: '#2C3E50',
+    marginBottom: 8,
+    marginTop: 12,
+    fontWeight: '500',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+  },
+  multilineInput: {
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  dateInput: {
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 8,
+    padding: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  datePicker: {
+    marginVertical: 10,
+  },
+  optionsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  optionButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: '#F0F7F4',
+    borderWidth: 1,
+    borderColor: '#DDD',
+  },
+  selectedOption: {
+    backgroundColor: '#4E8D7C',
+    borderColor: '#4E8D7C',
+  },
+  optionText: {
+    color: '#2C3E50',
+  },
+  selectedOptionText: {
+    color: 'white',
+  },
+  radioGroup: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 8,
+  },
+  radioButton: {
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 8,
+    padding: 12,
+    width: '48%',
+    alignItems: 'center',
+  },
+  radioButtonSelected: {
+    borderColor: '#4E8D7C',
+    backgroundColor: '#F0F7F4',
+  },
+  radioButtonText: {
     color: '#555',
-    paddingVertical: 4,
+  },
+  radioButtonTextSelected: {
+    color: '#4E8D7C',
+    fontWeight: '500',
+  },
+  formSection: {
+    marginBottom: 20,
+  },
+  photoUpload: {
+    height: 120,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    position: 'relative',
+  },
+  uploadError: {
+    borderColor: '#EF4444',
+  },
+  uploadedImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+  },
+  removeButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#EF4444',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photoUploadText: {
+    marginTop: 8,
+    color: '#4B5563',
+    fontSize: 14,
+  },
+  imagePreviewContainer: {
+    position: 'relative',
+    alignSelf: 'center',
+    marginTop: 10,
+  },
+  petImagePreview: {
+    width: 150,
+    height: 150,
+    borderRadius: 8,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: -10,
+    right: -10,
+    backgroundColor: '#FF3B30',
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  submitButton: {
+    backgroundColor: '#4E8D7C',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  submitButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

@@ -8,62 +8,90 @@ import {
   ActivityIndicator,
   TextInput,
   FlatList,
-  Image
+  Image,
+  Dimensions
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { getAllVerifiedClinics } from '../../../store/slices/authSlice';
 import { router } from 'expo-router';
+import { Menu } from 'lucide-react-native';
+import { DrawerActions } from '@react-navigation/native';
+
+const { width } = Dimensions.get('window');
 
 const ClinicCard = ({ clinic, onPress }) => {
   if (!clinic?.clinicDetails) return null;
+
 
   const clinicDetails = clinic.clinicDetails;
   const vet = clinic?.veterinarianDetails;
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>
-      {vet?.profilePhotoUrl ? (
-        <Image source={{ uri: vet.profilePhotoUrl }} style={styles.profileImage} />
-      ) : (
-        <View style={styles.profilePlaceholder}>
-          <MaterialIcons name="business" size={32} color="#4E8D7C" />
-        </View>
-      )}
+      <View style={styles.cardImageContainer}>
+        {vet?.profilePhotoUrl ? (
+          <Image source={{ uri: vet.profilePhotoUrl }} style={styles.profileImage} />
+        ) : (
+          <View style={styles.profilePlaceholder}>
+            <MaterialIcons name="business" size={32} color="#4E8D7C" />
+          </View>
+        )}
+      </View>
 
       <View style={styles.cardContent}>
         <View style={styles.cardHeader}>
           <Text style={styles.clinicName} numberOfLines={1}>
             {clinicDetails.clinicName}
           </Text>
-          <View style={styles.verifiedBadge}>
+          <View style={[
+            styles.verifiedBadge,
+            clinicDetails.verified ? styles.verified : styles.pending
+          ]}>
             <MaterialIcons
               name="verified"
-              size={16}
-              color={clinicDetails.verified ? "#4E8D7C" : "#E67C00"}
+              size={14}
+              color={clinicDetails.verified ? "white" : "white"}
             />
             <Text style={styles.verifiedText}>
               {clinicDetails.verified ? "Verified" : "Pending"}
             </Text>
           </View>
         </View>
+
         <Text style={styles.establishmentType}>{clinicDetails.establishmentType}</Text>
+
         <View style={styles.location}>
           <MaterialIcons name="location-on" size={14} color="#7D7D7D" />
           <Text style={styles.address} numberOfLines={1}>
             {clinicDetails.locality}, {clinicDetails.city}
           </Text>
         </View>
+
         {vet && (
           <View style={styles.vetInfo}>
             <Text style={styles.vetName}>Dr. {vet.name}</Text>
-            <Text style={styles.vetSpecialty}>{vet.specialization}</Text>
-            <Text style={styles.vetExperience}>{vet.experience} years experience</Text>
+            <View style={styles.specialtyContainer}>
+              <FontAwesome5 name="clinic-medical" size={12} color="#4E8D7C" />
+              <Text style={styles.vetSpecialty}>{vet.specialization}</Text>
+            </View>
+            <View style={styles.experienceContainer}>
+              <MaterialCommunityIcons name="clock-outline" size={12} color="#4E8D7C" />
+              <Text style={styles.vetExperience}>{vet.experience} years experience</Text>
+            </View>
           </View>
         )}
-        <View style={styles.feesContainer}>
-          <Text style={styles.feesLabel}>Consultation:</Text>
-          <Text style={styles.feesValue}>{clinicDetails.fees || "Not specified"}</Text>
+
+        <View style={styles.footer}>
+          <View style={styles.feesContainer}>
+            <Text style={styles.feesLabel}>Consultation:</Text>
+            <Text style={styles.feesValue}>₹{clinicDetails.fees || "NA"}</Text>
+          </View>
+          <View style={styles.ratingContainer}>
+            <MaterialIcons name="star" size={16} color="#FFC107" />
+            <Text style={styles.ratingText}>4.8</Text>
+            <Text style={styles.ratingCount}>(24)</Text>
+          </View>
         </View>
       </View>
     </TouchableOpacity>
@@ -131,13 +159,17 @@ const ClinicListScreen = ({ navigation }) => {
     return matchesSearch && matchesEstablishment && matchesService && matchesCity;
   });
 
+  const establishmentTypes = [...new Set(clinics
+    .filter(c => c?.clinicDetails?.establishmentType)
+    .map(c => c.clinicDetails.establishmentType)
+  )];
+
   const cities = [...new Set(clinics
     .filter(c => c?.clinicDetails?.city)
     .map(c => c.clinicDetails.city)
   )];
 
   const handleClinicPress = (clinic) => {
-    // Create a clean, serializable object
     const clinicData = {
       clinicDetails: {
         clinicName: clinic.clinicDetails.clinicName,
@@ -147,7 +179,7 @@ const ClinicListScreen = ({ navigation }) => {
         establishmentType: clinic.clinicDetails.establishmentType,
         fees: clinic.clinicDetails.fees,
         verified: clinic.clinicDetails.verified,
-        timings: clinic.clinicDetails.timings ? {...clinic.clinicDetails.timings} : null,
+        timings: clinic.clinicDetails.timings ? { ...clinic.clinicDetails.timings } : null,
         clinicId: clinic.clinicDetails.clinicId
       },
       veterinarianDetails: clinic.veterinarianDetails ? {
@@ -162,11 +194,9 @@ const ClinicListScreen = ({ navigation }) => {
       } : null
     };
 
-    console.log("Navigating with clinic data:", clinicData);
-    
     router.navigate({
       pathname: '/pages/ClinicDetailScreen',
-      params: { 
+      params: {
         clinic: JSON.stringify(clinicData)
       }
     });
@@ -188,10 +218,14 @@ const ClinicListScreen = ({ navigation }) => {
     });
   };
 
+  const openDrawer = () => {
+    navigation.dispatch(DrawerActions.openDrawer());
+  };
+
   if (loading) return (
     <View style={styles.loadingContainer}>
       <ActivityIndicator size="large" color="#4E8D7C" />
-      <Text style={styles.loadingText}>Loading clinics...</Text>
+      <Text style={styles.loadingText}>Finding nearby clinics...</Text>
     </View>
   );
 
@@ -207,7 +241,18 @@ const ClinicListScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={openDrawer} style={styles.menuButton}>
+          <Menu size={24} color="#1a1a1a" />
+        </TouchableOpacity>
+        <View>
+          <Text style={styles.headerTitle}>Find a Clinic</Text>
+          <Text style={styles.headerSubtitle}>Verified veterinary clinics near you</Text>
+        </View>
+      </View>
+
       <View style={styles.searchContainer}>
+        <MaterialIcons name="search" size={20} color="#7D7D7D" style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search clinics, doctors, or locations..."
@@ -215,49 +260,96 @@ const ClinicListScreen = ({ navigation }) => {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
-        <MaterialIcons name="search" size={24} color="#4E8D7C" />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <MaterialIcons name="close" size={20} color="#7D7D7D" />
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.filtersContainer}
+        contentContainerStyle={styles.filtersContent}
       >
         <TouchableOpacity
           style={[
             styles.filterButton,
             selectedFilters.establishmentType === null && styles.selectedFilter
           ]}
-          onPress={() => toggleFilter('establishmentType', null)}
+          onPress={clearAllFilters}
         >
           <Text style={[
             styles.filterButtonText,
             selectedFilters.establishmentType === null && styles.selectedFilterText
           ]}>
-            All Types
+            All
           </Text>
         </TouchableOpacity>
-        {/* Other filter buttons... */}
+
+        {establishmentTypes.map((type, index) => (
+          <TouchableOpacity
+            key={index}
+            style={[
+              styles.filterButton,
+              selectedFilters.establishmentType === type && styles.selectedFilter
+            ]}
+            onPress={() => toggleFilter('establishmentType', type)}
+          >
+            <Text style={[
+              styles.filterButtonText,
+              selectedFilters.establishmentType === type && styles.selectedFilterText
+            ]}>
+              {type}
+            </Text>
+          </TouchableOpacity>
+        ))}
+
+        {cities.slice(0, 5).map((city, index) => (
+          <TouchableOpacity
+            key={`city-${index}`}
+            style={[
+              styles.filterButton,
+              selectedFilters.city === city && styles.selectedFilter
+            ]}
+            onPress={() => toggleFilter('city', city)}
+          >
+            <Text style={[
+              styles.filterButtonText,
+              selectedFilters.city === city && styles.selectedFilterText
+            ]}>
+              {city}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </ScrollView>
 
       <View style={styles.resultsContainer}>
         <Text style={styles.resultsText}>
-          {filteredClinics.length} clinic{filteredClinics.length !== 1 ? 's' : ''} found
+          {filteredClinics.length} {filteredClinics.length === 1 ? 'Clinic' : 'Clinics'} Available
         </Text>
+        <TouchableOpacity onPress={clearAllFilters}>
+          <Text style={styles.clearFiltersText}>Reset filters</Text>
+        </TouchableOpacity>
       </View>
 
       {filteredClinics.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <MaterialIcons name="business" size={80} color="#D3D3D3" />
+          {/* <Image 
+            source={require('../../../assets/images/no-clinics.png')} 
+            style={styles.emptyImage}
+            resizeMode="contain"
+          /> */}
           <Text style={styles.emptyTitle}>No Clinics Found</Text>
           <Text style={styles.emptyText}>
-            Try adjusting your search or filters
+            {searchQuery ? 'Try a different search term' : 'Try adjusting your filters'}
           </Text>
           <TouchableOpacity
             style={styles.clearFiltersButton}
             onPress={clearAllFilters}
           >
-            <Text style={styles.clearFiltersText}>Clear All Filters</Text>
+            <Text style={styles.clearFiltersButtonText}>Clear All Filters</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -280,7 +372,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8F9FA',
     paddingHorizontal: 16,
-    paddingTop: 55
+    paddingTop: 50
+  },
+  header: {
+    marginBottom: 20,
+    paddingHorizontal: 8,
+    display: "flex",
+    flexDirection: 'row'
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#2C3E50',
+    marginBottom: 4
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: '#7D7D7D'
   },
   loadingContainer: {
     flex: 1,
@@ -316,70 +424,49 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '600'
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-    backgroundColor: '#F8F9FA'
-  },
-  emptyTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#2C3E50',
-    marginTop: 24
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#7D7D7D',
-    textAlign: 'center',
-    marginTop: 8
-  },
-  clearFiltersButton: {
-    marginTop: 20,
-    padding: 12,
-    backgroundColor: '#E8F5E9',
-    borderRadius: 8
-  },
-  clearFiltersText: {
-    color: '#4E8D7C',
-    fontWeight: '600'
-  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'white',
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
     marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
     elevation: 3
+  },
+  searchIcon: {
+    marginRight: 10
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#333'
+    color: '#333',
+    fontFamily: 'Inter-Medium'
   },
   filtersContainer: {
     marginBottom: 16,
     maxHeight: 42
   },
+  filtersContent: {
+    paddingHorizontal: 4
+  },
   filterButton: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
     backgroundColor: '#EDEDED',
     borderRadius: 20,
     marginRight: 10,
     borderWidth: 1,
-    borderColor: '#EDEDED'
+    borderColor: '#EDEDED',
   },
   filterButtonText: {
     color: '#555',
-    fontWeight: '500'
+    fontWeight: '500',
+    fontSize: 14
   },
   selectedFilter: {
     backgroundColor: '#E8F5E9',
@@ -390,37 +477,89 @@ const styles = StyleSheet.create({
     fontWeight: '600'
   },
   resultsContainer: {
-    marginBottom: 16
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 8
   },
   resultsText: {
+    color: '#2C3E50',
+    fontSize: 16,
+    fontWeight: '600'
+  },
+  clearFiltersText: {
+    color: '#4E8D7C',
+    fontSize: 14,
+    textDecorationLine: 'underline'
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40
+  },
+  emptyImage: {
+    width: width * 0.6,
+    height: width * 0.6,
+    opacity: 0.7,
+    marginBottom: 20
+  },
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#2C3E50',
+    marginTop: 16
+  },
+  emptyText: {
+    fontSize: 16,
     color: '#7D7D7D',
-    fontSize: 14
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 24
+  },
+  clearFiltersButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: '#4E8D7C',
+    borderRadius: 8
+  },
+  clearFiltersButtonText: {
+    color: 'white',
+    fontWeight: '600'
   },
   listContainer: {
     paddingBottom: 30
   },
   card: {
     backgroundColor: 'white',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     flexDirection: 'row',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
     elevation: 3
   },
+  cardImageContainer: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2
+  },
   profileImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
+    width: 90,
+    height: 90,
+    borderRadius: 12,
     marginRight: 16
   },
   profilePlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
+    width: 90,
+    height: 90,
+    borderRadius: 12,
     backgroundColor: '#F0F7F4',
     justifyContent: 'center',
     alignItems: 'center',
@@ -437,7 +576,7 @@ const styles = StyleSheet.create({
   },
   clinicName: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#2C3E50',
     flex: 1,
     marginRight: 10
@@ -445,15 +584,22 @@ const styles = StyleSheet.create({
   verifiedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0F7F4',
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12
+    borderRadius: 12,
+    marginLeft: 8
+  },
+  verified: {
+    backgroundColor: '#4E8D7C'
+  },
+  pending: {
+    backgroundColor: '#E67C00'
   },
   verifiedText: {
     fontSize: 12,
-    color: '#4E8D7C',
-    marginLeft: 4
+    color: 'white',
+    marginLeft: 4,
+    fontWeight: '600'
   },
   establishmentType: {
     fontSize: 14,
@@ -479,36 +625,71 @@ const styles = StyleSheet.create({
   },
   vetName: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#2C3E50',
+    marginBottom: 6
+  },
+  specialtyContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 4
   },
   vetSpecialty: {
     fontSize: 14,
     color: '#4E8D7C',
-    marginBottom: 4
+    marginLeft: 6
+  },
+  experienceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center'
   },
   vetExperience: {
     fontSize: 14,
-    color: '#7D7D7D'
+    color: '#7D7D7D',
+    marginLeft: 6
   },
-  feesContainer: {
+  footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: '#EEE'
   },
+  feesContainer: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
   feesLabel: {
     fontSize: 14,
-    color: '#7D7D7D'
+    color: '#7D7D7D',
+    marginRight: 6
   },
   feesValue: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#2C3E50'
-  }
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  ratingText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2C3E50',
+    marginLeft: 4,
+    marginRight: 2
+  },
+  ratingCount: {
+    fontSize: 12,
+    color: '#7D7D7D'
+  },
+  menuButton: {
+    marginRight: 20,
+    justifyContent: 'center'
+  },
 });
 
 export default ClinicListScreen;
