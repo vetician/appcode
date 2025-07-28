@@ -107,10 +107,29 @@ export const registerPet = createAsyncThunk(
           }
         }
       });
+      console.log("ProcessedData =>", processedData)
 
       return await authAPI.pet(processedData);
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message || 'Pet registration failed');
+    }
+  }
+);
+
+export const getPetsByUserId = createAsyncThunk(
+  'auth/getPetsByUserId',
+  async (_, { rejectWithValue }) => {
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      if (!userId) throw new Error('User not authenticated');
+
+      const response = await authAPI.getPetsByUserId();
+      if (!response.success) {
+        return rejectWithValue(response.message || 'Failed to fetch pets');
+      }
+      return response.pets;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Failed to load pets data');
     }
   }
 );
@@ -302,7 +321,7 @@ export const bookAppointment = createAsyncThunk(
   async (bookingData, { rejectWithValue }) => {
     try {
       const response = await authAPI.bookAppointment(bookingData);
-      
+
       if (!response.success) {
         return rejectWithValue(response.message || 'Booking failed');
       }
@@ -340,6 +359,11 @@ const initialState = {
     error: null,
     success: false,
     data: null
+  },
+  userPets: {
+    loading: false,
+    error: null,
+    data: null
   }
 };
 
@@ -372,6 +396,9 @@ const authSlice = createSlice({
     },
     resetBookingStatus: (state) => {
       state.bookingStatus = initialState.bookingStatus;
+    },
+    clearUserPets: (state) => {
+      state.userPets = initialState.userPets;
     }
   },
   extraReducers: (builder) => {
@@ -554,6 +581,21 @@ const authSlice = createSlice({
           success: false,
           data: null
         };
+      })
+
+      // Get Pets By User ID
+      .addCase(getPetsByUserId.pending, (state) => {
+        state.userPets.loading = true;
+        state.userPets.error = null;
+      })
+      .addCase(getPetsByUserId.fulfilled, (state, action) => {
+        state.userPets.loading = false;
+        state.userPets.error = null;
+        state.userPets.data = action.payload;
+      })
+      .addCase(getPetsByUserId.rejected, (state, action) => {
+        state.userPets.loading = false;
+        state.userPets.error = action.payload;
       });
   },
 });
@@ -571,6 +613,7 @@ export const {
   updateUser,
   resetClinicRegistration,
   clearVeterinarianProfile,
-  resetBookingStatus
+  resetBookingStatus,
+  clearUserPets
 } = authSlice.actions;
 export default authSlice.reducer;

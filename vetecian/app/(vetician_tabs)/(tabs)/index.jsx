@@ -1,7 +1,7 @@
 import React from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
-import Home from '../../../components/petparent/home/Home';
-import PetDetail from '../../../components/petparent/home/PetDetail'
+import Home from '../pages/Home';
+import PetList from '../pages/PetList'
 import ParentDetail from '../onboarding/parent_detail'
 import ClinicListScreen from '../pages/ClinicListScreen';
 
@@ -23,9 +23,9 @@ export default function AppDrawer() {
         options={{ headerShown: false, title: 'Dassboard' }}
       />
       <Drawer.Screen
-        name="PetDetail"
-        component={PetDetail}
-        options={{ headerShown: false, title: 'Pet Details' }}
+        name="Pets"
+        component={PetList}
+        options={{ headerShown: false, title: 'Pets' }}
       />
       <Drawer.Screen
         name="ParentDetail"

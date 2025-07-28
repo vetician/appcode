@@ -623,10 +623,10 @@ const createPet = catchAsync(async (req, res, next) => {
   }
 
   // Check if pet already exists for this user
-  const existingPet = await Pet.findOne({ name, userId });
-  if (existingPet) {
-    return next(new AppError('A pet with this name already exists for this user', 409));
-  }
+  // const existingPet = await Pet.findOne({ name, userId });
+  // if (existingPet) {
+  //   return next(new AppError('A pet with this name already exists for this user', 409));
+  // }
 
   // Create new pet  
   const pet = new Pet({
@@ -639,12 +639,37 @@ const createPet = catchAsync(async (req, res, next) => {
 
   await pet.save();
 
-  console.log(res)
 
   res.status(201).json({
     success: true,
     message: 'Pet created successfully',
     pet: pet.getBasicInfo()
+  });
+});
+
+// registered pet info
+const getPetsByUserId = catchAsync(async (req, res, next) => {
+  const { userId } = req.params; 
+  console.log("getPetsByUserId =>",userId)
+
+  if (!userId) {
+    return next(new AppError('User ID is required', 400));
+  }
+
+  const pets = await Pet.find({ userId });
+
+  if (!pets || pets.length === 0) {
+    return res.status(200).json({
+      success: true,
+      message: 'No pets found for this user',
+      pets: []
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Pets retrieved successfully',
+    pets: pets
   });
 });
 
@@ -925,6 +950,7 @@ const unverifyPetResort = catchAsync(async (req, res, next) => {
 
 
 
+
 // veterinarian's clinic for pet parent
 const getAllClinicsWithVets = catchAsync(async (req, res, next) => {
   // 1. Fetch all verified clinics
@@ -1105,5 +1131,6 @@ module.exports = {
   verifyPetResort,
   unverifyPetResort,
   getAllClinicsWithVets,
-  createAppointment
+  createAppointment,
+  getPetsByUserId
 };
