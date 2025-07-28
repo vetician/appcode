@@ -21,8 +21,10 @@ const VerifiedClinics = () => {
   const fetchClinics = async () => {
     try {
       setLoading(true);
+      
       const response = await apiService.getVerifiedClinics(filters);
       setClinics(response.clinics || []);
+      console.log(selectedClinic)
     } catch (err) {
       setError(err.message);
     } finally {
