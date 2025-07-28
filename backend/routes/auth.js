@@ -24,7 +24,8 @@ const {
   verifyPetResort,
   unverifyPetResort,
   getAllClinicsWithVets,
-  createAppointment
+  createAppointment,
+  getPetsByUserId
 } = require('../controllers/authController');
 const { auth, protect } = require('../middleware/auth');
 const { validate } = require('../middleware/validation');
@@ -76,6 +77,7 @@ router.post('/login', loginValidation, validate, login);
 
 router.post('/parent-register', registerParent);
 router.post('/pet-register', createPet);
+router.post('/pets/user/:userId', getPetsByUserId);
 router.post('/petparent/appointments/book', createAppointment);
 
 router.post('/veterinarian-register', registerVeterinarian);

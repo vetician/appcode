@@ -170,30 +170,32 @@ export const authAPI = {
   },
 
   // Pet register
-  pet: async ({ name, species, gender, dob, additionalData }) => {
+  pet: async (petData) => {
     try {
-      // Get the userId from AsyncStorage
-      const userId = await AsyncStorage.getItem('userId');
-
-      if (!userId) {
-        throw new Error('User not authenticated');
-      }
-
-      // console.log(name, species, gender, dob)
       return await apiRequest('/auth/pet-register', {
         method: 'POST',
         body: JSON.stringify({
-          name,
-          species,
-          gender,
-          dob,
-          userId: userId, // Explicitly include user ID in the body if needed
-          ...additionalData,
+          ...petData
         }),
       });
     } catch (error) {
       console.error('Error in pet registration:', error);
       throw error; // Re-throw the error for handling in the calling function
+    }
+  },
+
+  // Add to authAPI object in authService.js
+  getPetsByUserId: async () => {
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      if (!userId) throw new Error('User not authenticated');
+
+      return await apiRequest(`/auth/pets/user/${userId}`, {
+        method: 'POST',  // Changed from POST to GET since you're fetching data
+      });
+    } catch (error) {
+      console.error('Error fetching pets:', error);
+      throw error;
     }
   },
 
