@@ -481,7 +481,7 @@ const getUnverifiedClinics = catchAsync(async (req, res, next) => {
 });
 
 // get verified clinics (admin)
-const getVerifiedClinics = catchAsync(async (req, res, next) => {cd   
+const getVerifiedClinics = catchAsync(async (req, res, next) => {   
   const filter = { verified: true };
   if (req.query.city) filter.city = req.query.city;
   if (req.query.establishmentType) filter.establishmentType = req.query.establishmentType;
