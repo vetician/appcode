@@ -7,7 +7,12 @@ const {
   logout,
   logoutAll,
   registerParent,
+  getParentById,
+  deleteParent,
+  updateParent,
   createPet,
+  updateUserPet,
+  deleteUserPet,
   registerVeterinarian,
   getUnverifiedVeterinarians,
   getVerifiedVeterinarians,
@@ -76,8 +81,14 @@ router.post('/register', registerValidation, validate, register);
 router.post('/login', loginValidation, validate, login);
 
 router.post('/parent-register', registerParent);
+
+router.get('/parents/:id', getParentById);
+router.patch('/parents/:id', updateParent);
+router.delete('/parents/:id', deleteParent);
 router.post('/pet-register', createPet);
 router.post('/pets/user/:userId', getPetsByUserId);
+router.delete('/users/:userId/pets/:petId', deleteUserPet);
+router.patch('/users/:userId/pets/:petId',updateUserPet);
 router.post('/petparent/appointments/book', createAppointment);
 
 router.post('/veterinarian-register', registerVeterinarian);
