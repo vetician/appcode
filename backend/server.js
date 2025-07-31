@@ -7,6 +7,9 @@ require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
+const parentRoutes=require('./routes/parentRoutes')
+const vetRoutes=require('./routes/vetRoutes')
+const resortRoutes=require('./routes/resortRoutes')
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -55,7 +58,9 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/expo-auth
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
-
+app.use('/api/parents', parentRoutes);
+app.use('/api/vets', vetRoutes);
+app.use('/api/resorts', resortRoutes);
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({
