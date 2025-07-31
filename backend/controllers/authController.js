@@ -167,8 +167,84 @@ const registerParent = catchAsync(async (req, res, next) => {
   });
 });
 
+const getParentById = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
 
+  // Find parent by ID
+  const parent = await Parent.findById(id);
+  
+  if (!parent) {
+    return next(new AppError('Parent not found', 404));
+  }
 
+  res.status(200).json({
+    success: true,
+    parent: parent.getPublicProfile()
+  });
+});
+
+const updateParent = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  const updates = req.body;
+
+  // Find parent by ID
+  const parent = await Parent.findById(id);
+  
+  if (!parent) {
+    return next(new AppError('Parent not found', 404));
+  }
+
+  // Check if email is being changed
+  if (updates.email && updates.email !== parent.email) {
+    const existingParent = await Parent.findOne({ email: updates.email });
+    if (existingParent) {
+      return next(new AppError('Email already in use by another parent', 400));
+    }
+  }
+
+  // List of allowed fields to update
+  const allowedUpdates = ['name', 'email', 'phone', 'address'];
+  const invalidUpdates = Object.keys(updates).filter(
+    field => !allowedUpdates.includes(field)
+  );
+
+  if (invalidUpdates.length > 0) {
+    return next(new AppError(
+      `Invalid update fields: ${invalidUpdates.join(', ')}`,
+      400
+    ));
+  }
+
+  // Apply updates
+  Object.keys(updates).forEach(update => {
+    parent[update] = updates[update];
+  });
+
+  await parent.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Parent updated successfully',
+    parent: parent.getPublicProfile()
+  });
+});
+
+const deleteParent = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+
+  // Find parent by ID and delete
+  const parent = await Parent.findByIdAndDelete(id);
+  
+  if (!parent) {
+    return next(new AppError('Parent not found', 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Parent deleted successfully',
+    data: null
+  });
+});
 
 
 
@@ -673,6 +749,70 @@ const getPetsByUserId = catchAsync(async (req, res, next) => {
   });
 });
 
+const updateUserPet = catchAsync(async (req, res, next) => {
+  const { userId, petId } = req.params;
+  const updates = req.body;
+
+  console.log(`updateUserPet => User: ${userId}, Pet: ${petId}`);
+
+  // Validate required IDs
+  if (!userId || !petId) {
+    return next(new AppError('Both User ID and Pet ID are required', 400));
+  }
+
+  // Find the pet belonging to this specific user
+  const pet = await Pet.findOne({ _id: petId, userId });
+
+  if (!pet) {
+    return next(new AppError('Pet not found for this user', 404));
+  }
+
+  // Optional: List of allowed fields to update
+  const allowedUpdates = ['name', 'type', 'age', 'breed', 'vaccinationStatus'];
+  const isValidUpdate = Object.keys(updates).every(update => 
+    allowedUpdates.includes(update)
+  );
+
+  if (!isValidUpdate) {
+    return next(new AppError('Invalid update fields', 400));
+  }
+
+  // Apply updates
+  Object.keys(updates).forEach(update => {
+    pet[update] = updates[update];
+  });
+
+  await pet.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Pet updated successfully',
+    pet: pet
+  });
+});
+const deleteUserPet = catchAsync(async (req, res, next) => {
+  const { userId, petId } = req.params;
+
+  console.log(`deleteUserPet => User: ${userId}, Pet: ${petId}`);
+
+  // Validate required IDs
+  if (!userId || !petId) {
+    return next(new AppError('Both User ID and Pet ID are required', 400));
+  }
+
+  // Find and delete the pet belonging to this specific user
+  const pet = await Pet.findOneAndDelete({ _id: petId, userId });
+
+  if (!pet) {
+    return next(new AppError('Pet not found for this user', 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Pet deleted successfully',
+    data: null
+  });
+});
 // Refresh access token
 const refreshToken = catchAsync(async (req, res, next) => {
   const { refreshToken: token } = req.body;
@@ -1114,7 +1254,12 @@ module.exports = {
   logout,
   logoutAll,
   registerParent,
+  getParentById,
+  updateParent,
+  deleteParent,
   createPet,
+  updateUserPet,
+  deleteUserPet,
   registerVeterinarian,
   getUnverifiedVeterinarians,
   getVerifiedVeterinarians,
