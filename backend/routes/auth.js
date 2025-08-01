@@ -83,7 +83,7 @@ router.post('/login', loginValidation, validate, login);
 
 router.post('/parent-register', registerParent);
 router.get('/parents/:userId', getParentById);
-router.patch('/parents/:id', updateParent);
+router.patch('/updateParent/:id', updateParent);
 router.delete('/parents/:id', deleteParent);
 router.post('/pet-register', createPet);
 router.post('/pets/user/:userId', getPetsByUserId);

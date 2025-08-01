@@ -63,13 +63,21 @@ export const authAPI = {
       body: JSON.stringify({ name, email, phone, address, gender, image, userId }),
     });
   },
-  
+
+  // Get parent data
   getParent: async (userId) => {
     return await apiRequest(`/auth/parents/${userId}`, {
       method: 'GET'
     });
   },
 
+  // Update parent data
+  updateParent: async (userId, parentData) => {
+    return await apiRequest(`/auth/updateParent/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(parentData),
+    });
+  },
 
   // Veterinarian register
   veterinarian: async (
