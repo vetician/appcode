@@ -136,8 +136,8 @@ const login = catchAsync(async (req, res, next) => {
 
 // Register new parent
 const registerParent = catchAsync(async (req, res, next) => {
-  const { name, email, phone, address } = req.body;
-  console.log(req.body)
+  const { name, email, phone, address, gender, image, userId } = req.body;
+  console.log(req.body);
 
   // Check if parent already exists
   const existingParent = await Parent.findByEmail(email);
@@ -145,17 +145,27 @@ const registerParent = catchAsync(async (req, res, next) => {
     return next(new AppError('Parent with this email already exists', 400));
   }
 
+  // Validate user exists if userId is provided
+  if (userId) {
+    const user = await User.findById(userId);
+    if (!user) {
+      return next(new AppError('User not found', 404));
+    }
+  }
+
   // Create new parent  
   const parent = new Parent({
-    name: name,
-    email: email,
-    phone: phone,
-    address: address,
+    name,
+    email,
+    phone,
+    address,
+    gender: gender || 'other',
+    image,
+    user: userId || null
   });
 
   await parent.save();
 
-  // Generate tokens (same as user registration)
   const { accessToken, refreshToken } = generateTokens(parent._id);
 
   res.status(201).json({
@@ -168,10 +178,11 @@ const registerParent = catchAsync(async (req, res, next) => {
 });
 
 const getParentById = catchAsync(async (req, res, next) => {
-  const { id } = req.params;
+  const { userId } = req.params;
+  console.log(userId);
 
   // Find parent by ID
-  const parent = await Parent.findById(id);
+  const parent = await Parent.find({user : userId});
   
   if (!parent) {
     return next(new AppError('Parent not found', 404));
@@ -179,53 +190,72 @@ const getParentById = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    parent: parent.getPublicProfile()
+    parent: parent
   });
 });
 
 const updateParent = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  const updates = req.body;
+  const { name, email, phone, address, gender, image } = req.body;
 
-  // Find parent by ID
-  const parent = await Parent.findById(id);
+  // Find parent by user ID
+  const parent = await Parent.findOne({ user: id });
   
   if (!parent) {
-    return next(new AppError('Parent not found', 404));
+    return next(new AppError('Parent profile not found', 404));
   }
 
-  // Check if email is being changed
-  if (updates.email && updates.email !== parent.email) {
-    const existingParent = await Parent.findOne({ email: updates.email });
-    if (existingParent) {
+  // Validate required fields
+  if (!name || !email || !phone || !address) {
+    return next(new AppError('Name, email, phone and address are required', 400));
+  }
+
+  // Basic email validation
+  if (email && !email.includes('@')) {
+    return next(new AppError('Please provide a valid email address', 400));
+  }
+
+  // Basic phone validation (10-15 digits)
+  if (phone && (phone.length < 10 || phone.length > 15 || !/^\d+$/.test(phone))) {
+    return next(new AppError('Please provide a valid phone number (10-15 digits)', 400));
+  }
+
+  // Check if email is being changed and already exists
+  if (email && email !== parent.email) {
+    const existingParent = await Parent.findOne({ email });
+    if (existingParent && existingParent._id.toString() !== parent._id.toString()) {
       return next(new AppError('Email already in use by another parent', 400));
     }
   }
 
-  // List of allowed fields to update
-  const allowedUpdates = ['name', 'email', 'phone', 'address'];
-  const invalidUpdates = Object.keys(updates).filter(
-    field => !allowedUpdates.includes(field)
-  );
+  // Update parent fields
+  parent.name = name;
+  parent.email = email;
+  parent.phone = phone;
+  parent.address = address;
+  if (gender) parent.gender = gender;
+  if (image) parent.image = image;
 
-  if (invalidUpdates.length > 0) {
-    return next(new AppError(
-      `Invalid update fields: ${invalidUpdates.join(', ')}`,
-      400
-    ));
-  }
-
-  // Apply updates
-  Object.keys(updates).forEach(update => {
-    parent[update] = updates[update];
-  });
-
+  // Save updated parent
   await parent.save();
 
+  // Return updated parent data
   res.status(200).json({
     success: true,
-    message: 'Parent updated successfully',
-    parent: parent.getPublicProfile()
+    message: 'Parent profile updated successfully',
+    data: {
+      parent: {
+        _id: parent._id,
+        user: parent.user,
+        name: parent.name,
+        email: parent.email,
+        phone: parent.phone,
+        address: parent.address,
+        gender: parent.gender,
+        image: parent.image,
+        createdAt: parent.createdAt
+      }
+    }
   });
 });
 
@@ -245,8 +275,6 @@ const deleteParent = catchAsync(async (req, res, next) => {
     data: null
   });
 });
-
-
 
 
 // create Veterinarian

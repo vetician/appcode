@@ -1,4 +1,5 @@
 import { Stack } from 'expo-router';
+// import HealthTipsScreen from './pages/HealthTipsScreen'
 
 export default function Layout() {
   return (

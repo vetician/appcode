@@ -4,6 +4,7 @@ import Home from '../pages/Home';
 import PetList from '../pages/PetList'
 import ParentDetail from '../onboarding/parent_detail'
 import ClinicListScreen from '../pages/ClinicListScreen';
+import HealthTipsScreen from '../pages/HealthTipsScreen'
 
 const Drawer = createDrawerNavigator();
 
@@ -27,15 +28,20 @@ export default function AppDrawer() {
         component={PetList}
         options={{ headerShown: false, title: 'Pets' }}
       />
-      <Drawer.Screen
+      {/* <Drawer.Screen
         name="ParentDetail"
         component={ParentDetail}
         options={{ headerShown: false, title: 'Parent Details' }}
-      />
+      /> */}
       <Drawer.Screen
         name="ClinicList"
         component={ClinicListScreen}
         options={{ headerShown: false, title: 'Find Clinics' }}
+      />
+      <Drawer.Screen
+        name="HealthTips"
+        component={HealthTipsScreen}
+        options={{ headerShown: false, title: 'Health Tips' }}
       />
     </Drawer.Navigator>
   );

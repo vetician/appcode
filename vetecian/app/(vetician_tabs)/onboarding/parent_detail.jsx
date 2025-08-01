@@ -1,8 +1,10 @@
 import { React, useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { useNavigation, useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
-import { User, Mail, Phone, Home, Menu } from 'lucide-react-native';
+import { User, Mail, Phone, Home, Menu, Camera, UserCircle } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { parentUser } from '../../../store/slices/authSlice';
 import { validateEmail } from '../../../utils/validation';
 
@@ -12,17 +14,12 @@ export default function PetDetail() {
     email: '',
     phone: '',
     address: '',
+    gender: 'male',
+    image: null
   });
   const [errors, setErrors] = useState({});
+  const [isUploading, setIsUploading] = useState(false);
   const navigation = useNavigation();
-
-  // Disable the back button
-  // useEffect(() => {
-  //   navigation.setOptions({
-  //     headerLeft: () => null,
-  //     gestureEnabled: false,
-  //   });
-  // }, [navigation]);
 
   const dispatch = useDispatch();
   const { isLoading, error } = useSelector(state => state.auth);
@@ -39,6 +36,98 @@ export default function PetDetail() {
   const validatePhone = (phone) => {
     const phoneRegex = /^[0-9]{10,15}$/;
     return phoneRegex.test(phone);
+  };
+
+  const uploadToCloudinary = async (file) => {
+    const fileExtension = file.uri.split('.').pop().toLowerCase();
+    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension);
+    const type = isImage ? 'image' : 'raw';
+
+    console.log('[Cloudinary] Starting upload:', {
+      name: file.name || 'unnamed',
+      type,
+      size: file.size || 'unknown',
+      uri: file.uri
+    });
+
+    try {
+      const fileInfo = await FileSystem.getInfoAsync(file.uri, { size: true });
+      if (!fileInfo.exists) throw new Error(`File not found: ${file.uri}`);
+      if (fileInfo.size === 0) throw new Error('Empty file');
+
+      const formData = new FormData();
+      formData.append('file', {
+        uri: file.uri,
+        name: file.name || `pet_upload_${Date.now()}.${fileExtension}`,
+        type: isImage ? `image/${fileExtension === 'jpg' ? 'jpeg' : fileExtension}`
+          : file.type || 'application/octet-stream'
+      });
+      formData.append('upload_preset', 'vetician');
+      formData.append('cloud_name', 'dqwzfs4ox');
+
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/dqwzfs4ox/${type}/upload`,
+        {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('[Cloudinary] Upload success!', {
+        public_id: data.public_id,
+        type,
+        size: fileInfo.size
+      });
+      return data;
+    } catch (error) {
+      console.error('[Cloudinary] UPLOAD FAILED:', {
+        error: error.message,
+        file: file.name,
+        type,
+        uri: file.uri
+      });
+      throw error;
+    }
+  };
+
+  const pickImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission required', 'We need camera roll permissions to upload images');
+        return;
+      }
+
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        const selectedAsset = result.assets[0];
+        setFormData(prev => ({
+          ...prev,
+          image: {
+            uri: selectedAsset.uri,
+            name: selectedAsset.fileName || `image_${Date.now()}.jpg`,
+            type: 'image/jpeg'
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('Image picker error:', error);
+      Alert.alert('Error', 'Failed to pick image. Please try again.');
+    }
   };
 
   const handleSubmit = async () => {
@@ -76,16 +165,25 @@ export default function PetDetail() {
       setErrors(newErrors);
       return;
     }
-    // console.log(formData)
 
     try {
-      // Here you would typically send the data to your backend
-      // For now, we'll just show a success message
+      setIsUploading(true);
+      let imageUrl = null;
+
+      // Upload image to Cloudinary if exists
+      if (formData.image) {
+        const cloudinaryResponse = await uploadToCloudinary(formData.image);
+        imageUrl = cloudinaryResponse.secure_url;
+      }
+
+      // Dispatch the form data with image URL
       const result = await dispatch(parentUser({
         name: formData.name.trim(),
         email: formData.email.trim(),
         phone: formData.phone,
-        address: formData.address
+        address: formData.address,
+        gender: formData.gender,
+        image: imageUrl
       })).unwrap();
       console.log(result)
 
@@ -97,7 +195,10 @@ export default function PetDetail() {
         );
       }
     } catch (error) {
-      Alert.alert('Error', 'An error occurred while saving parent information', error);
+      console.error('Submission error:', error);
+      Alert.alert('Error', error.message || 'An error occurred while saving parent information');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -114,10 +215,26 @@ export default function PetDetail() {
           </View>
 
           <View style={styles.form}>
-
-            {/* parent name and email */}
+            {/* Profile Image Upload */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Parent Name and Email</Text>
+              <Text style={styles.sectionTitle}>Profile Picture</Text>
+              <TouchableOpacity style={styles.imageUploadContainer} onPress={pickImage}>
+                {formData.image ? (
+                  <Image source={{ uri: formData.image.uri }} style={styles.profileImage} />
+                ) : (
+                  <View style={styles.profileImagePlaceholder}>
+                    <UserCircle size={40} color="#666" />
+                  </View>
+                )}
+                {/* <View style={styles.cameraIcon}>
+                  <Camera size={20} color="#fff" />
+                </View> */}
+              </TouchableOpacity>
+            </View>
+
+            {/* parent name, email and gender */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Parent Information</Text>
               <View style={styles.inputContainer}>
                 <View style={styles.inputWrapper}>
                   <User size={20} color="#666" style={styles.inputIcon} />
@@ -148,6 +265,54 @@ export default function PetDetail() {
                 </View>
                 {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
               </View>
+
+              <View style={styles.genderContainer}>
+                <Text style={styles.genderLabel}>Gender:</Text>
+                <View style={styles.genderOptions}>
+                  <TouchableOpacity
+                    style={[
+                      styles.genderOption,
+                      formData.gender === 'male' && styles.genderOptionSelected
+                    ]}
+                    onPress={() => handleInputChange('gender', 'male')}
+                  >
+                    <Text style={[
+                      styles.genderOptionText,
+                      formData.gender === 'male' && styles.genderOptionTextSelected
+                    ]}>
+                      Male
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.genderOption,
+                      formData.gender === 'female' && styles.genderOptionSelected
+                    ]}
+                    onPress={() => handleInputChange('gender', 'female')}
+                  >
+                    <Text style={[
+                      styles.genderOptionText,
+                      formData.gender === 'female' && styles.genderOptionTextSelected
+                    ]}>
+                      Female
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.genderOption,
+                      formData.gender === 'other' && styles.genderOptionSelected
+                    ]}
+                    onPress={() => handleInputChange('gender', 'other')}
+                  >
+                    <Text style={[
+                      styles.genderOptionText,
+                      formData.gender === 'other' && styles.genderOptionTextSelected
+                    ]}>
+                      Other
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
 
             {/* phone number */}
@@ -168,7 +333,7 @@ export default function PetDetail() {
               </View>
             </View>
 
-            {/* Adress */}
+            {/* Address */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Address</Text>
               <View style={styles.inputContainer}>
@@ -187,13 +352,12 @@ export default function PetDetail() {
             </View>
 
             <TouchableOpacity
-              style={styles.submitButton}
+              style={[styles.submitButton, (isLoading || isUploading) && styles.submitButtonDisabled]}
               onPress={handleSubmit}
-            // disabled={isLoading}
+              disabled={isLoading || isUploading}
             >
               <Text style={styles.submitButtonText}>
-                {/* {isLoading ? 'Saving Information...' : 'Save Parent Information'}  */}
-                Save Parent Information
+                {(isLoading || isUploading) ? 'Saving Information...' : 'Save Parent Information'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -272,6 +436,65 @@ const styles = StyleSheet.create({
     marginTop: 5,
     paddingLeft: 5,
   },
+  imageUploadContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  profileImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+  },
+  profileImagePlaceholder: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cameraIcon: {
+    position: 'absolute',
+    bottom: 0,
+    right: 30,
+    backgroundColor: '#007AFF',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  genderContainer: {
+    marginTop: 15,
+  },
+  genderLabel: {
+    fontSize: 16,
+    color: '#444',
+    marginBottom: 10,
+  },
+  genderOptions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  genderOption: {
+    flex: 1,
+    marginHorizontal: 5,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    alignItems: 'center',
+  },
+  genderOptionSelected: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  genderOptionText: {
+    color: '#333',
+  },
+  genderOptionTextSelected: {
+    color: '#fff',
+  },
   submitButton: {
     backgroundColor: '#007AFF',
     borderRadius: 12,
@@ -279,6 +502,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
+  },
+  submitButtonDisabled: {
+    backgroundColor: '#A0C4FF',
   },
   submitButtonText: {
     color: 'white',

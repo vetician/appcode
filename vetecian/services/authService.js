@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_BASE_URL = 'http:/10.35.75.244:3000/api'; // Update thicd s to your backend URL
+const API_BASE_URL = 'http://192.168.1.78:3000/api'; // Update thicd s to your backend URL
+// const API_BASE_URL = 'http://192.168.1.9:3000/api'; // Update thicd s to your backend URL
 
 // Helper function to handle API responses
 const handleResponse = async (response) => {
@@ -56,10 +57,25 @@ export const authAPI = {
   },
 
   // Parent register
-  parent: async (name, email, phone, address) => {
+  parent: async (name, email, phone, address, gender, image, userId) => {
     return await apiRequest('/auth/parent-register', {
       method: 'POST',
-      body: JSON.stringify({ name, email, phone, address }),
+      body: JSON.stringify({ name, email, phone, address, gender, image, userId }),
+    });
+  },
+
+  // Get parent data
+  getParent: async (userId) => {
+    return await apiRequest(`/auth/parents/${userId}`, {
+      method: 'GET'
+    });
+  },
+
+  // Update parent data
+  updateParent: async (userId, parentData) => {
+    return await apiRequest(`/auth/updateParent/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(parentData),
     });
   },
 

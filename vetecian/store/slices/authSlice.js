@@ -31,12 +31,60 @@ export const signUpUser = createAsyncThunk(
 
 export const parentUser = createAsyncThunk(
   'auth/parent',
-  async ({ name, email, phone, address }, { rejectWithValue }) => {
+  async ({ name, email, phone, address, gender, image }, { rejectWithValue }) => {
+    const userId = await AsyncStorage.getItem('userId');
+    if (!userId) {
+      return rejectWithValue({
+        error: {
+          message: 'User not authenticated',
+          code: 401
+        },
+        success: false
+      });
+    }
     try {
-      const response = await authAPI.parent(name, email, phone, address);
+      const response = await authAPI.parent(name, email, phone, address, gender, image, userId);
       return response;
     } catch (error) {
       return rejectWithValue(error.message || 'Parent register failed');
+    }
+  }
+);
+
+export const updateParent = createAsyncThunk(
+  'auth/updateParent',
+  async (parentData, { rejectWithValue }) => {
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      if (!userId) {
+        return rejectWithValue('User not authenticated');
+      }
+
+      const response = await authAPI.updateParent(userId, parentData);
+      if (!response.success) {
+        return rejectWithValue(response.message || 'Failed to update parent profile');
+      }
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Failed to update parent profile');
+    }
+  }
+);
+
+export const getParent = createAsyncThunk(
+  'auth/getParent',
+  async (userId, { rejectWithValue }) => {
+    try {
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+      const response = await authAPI.getParent(userId);
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to fetch parent data');
+      }
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Failed to load parent data');
     }
   }
 );
@@ -179,7 +227,6 @@ export const registerClinic = createAsyncThunk(
       if (!response.success) {
         return rejectWithValue(response); // Pass through the entire error response
       }
-
 
       return response;
 
@@ -364,6 +411,11 @@ const initialState = {
     loading: false,
     error: null,
     data: null
+  },
+  parentData: {
+    loading: false,
+    error: null,
+    data: null
   }
 };
 
@@ -381,6 +433,7 @@ const authSlice = createSlice({
       state.clinicVerification = null;
       state.veterinarianProfile = initialState.veterinarianProfile;
       state.bookingStatus = initialState.bookingStatus;
+      state.parentData = initialState.parentData;
     },
     clearError: (state) => {
       state.error = null;
@@ -441,6 +494,60 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
       })
 
+      // Get Parent Data
+      .addCase(getParent.pending, (state) => {
+        state.parentData = {
+          loading: true,
+          error: null,
+          data: null
+        };
+      })
+      .addCase(getParent.fulfilled, (state, action) => {
+        state.parentData = {
+          loading: false,
+          error: null,
+          data: action.payload
+        };
+      })
+      .addCase(getParent.rejected, (state, action) => {
+        state.parentData = {
+          loading: false,
+          error: action.payload,
+          data: null
+        };
+      })
+
+      // Update Parent Data
+      .addCase(updateParent.pending, (state) => {
+        state.parentData = {
+          ...state.parentData,
+          loading: true,
+          error: null
+        };
+      })
+      .addCase(updateParent.fulfilled, (state, action) => {
+        state.parentData = {
+          loading: false,
+          error: null,
+          data: action.payload
+        };
+        // Update user data if needed
+        if (state.user) {
+          state.user = {
+            ...state.user,
+            name: action.payload.data?.name || state.user.name,
+            email: action.payload.data?.email || state.user.email
+          };
+        }
+      })
+      .addCase(updateParent.rejected, (state, action) => {
+        state.parentData = {
+          ...state.parentData,
+          loading: false,
+          error: action.payload
+        };
+      })
+
       // Refresh Token
       .addCase(refreshToken.pending, (state) => {
         state.isLoading = true;
@@ -485,7 +592,6 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.clinicRegistrationStatus = 'success';
         state.error = null;
-        // Update user role if needed
         if (state.user) {
           state.user.role = 'clinic_owner';
         }
