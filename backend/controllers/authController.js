@@ -136,8 +136,8 @@ const login = catchAsync(async (req, res, next) => {
 
 // Register new parent
 const registerParent = catchAsync(async (req, res, next) => {
-  const { name, email, phone, address } = req.body;
-  console.log(req.body)
+  const { name, email, phone, address, gender, image, userId } = req.body;
+  console.log(req.body);
 
   // Check if parent already exists
   const existingParent = await Parent.findByEmail(email);
@@ -145,17 +145,27 @@ const registerParent = catchAsync(async (req, res, next) => {
     return next(new AppError('Parent with this email already exists', 400));
   }
 
+  // Validate user exists if userId is provided
+  if (userId) {
+    const user = await User.findById(userId);
+    if (!user) {
+      return next(new AppError('User not found', 404));
+    }
+  }
+
   // Create new parent  
   const parent = new Parent({
-    name: name,
-    email: email,
-    phone: phone,
-    address: address,
+    name,
+    email,
+    phone,
+    address,
+    gender: gender || 'other',
+    image,
+    user: userId || null
   });
 
   await parent.save();
 
-  // Generate tokens (same as user registration)
   const { accessToken, refreshToken } = generateTokens(parent._id);
 
   res.status(201).json({
@@ -168,10 +178,11 @@ const registerParent = catchAsync(async (req, res, next) => {
 });
 
 const getParentById = catchAsync(async (req, res, next) => {
-  const { id } = req.params;
+  const { userId } = req.params;
+  console.log(userId);
 
   // Find parent by ID
-  const parent = await Parent.findById(id);
+  const parent = await Parent.find({user : userId});
   
   if (!parent) {
     return next(new AppError('Parent not found', 404));
@@ -179,7 +190,7 @@ const getParentById = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    parent: parent.getPublicProfile()
+    parent: parent
   });
 });
 

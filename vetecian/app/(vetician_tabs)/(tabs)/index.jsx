@@ -28,11 +28,11 @@ export default function AppDrawer() {
         component={PetList}
         options={{ headerShown: false, title: 'Pets' }}
       />
-      <Drawer.Screen
+      {/* <Drawer.Screen
         name="ParentDetail"
         component={ParentDetail}
         options={{ headerShown: false, title: 'Parent Details' }}
-      />
+      /> */}
       <Drawer.Screen
         name="ClinicList"
         component={ClinicListScreen}

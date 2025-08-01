@@ -31,12 +31,40 @@ export const signUpUser = createAsyncThunk(
 
 export const parentUser = createAsyncThunk(
   'auth/parent',
-  async ({ name, email, phone, address }, { rejectWithValue }) => {
+  async ({ name, email, phone, address, gender, image }, { rejectWithValue }) => {
+    const userId = await AsyncStorage.getItem('userId');
+    if (!userId) {
+      return rejectWithValue({
+        error: {
+          message: 'User not authenticated',
+          code: 401
+        },
+        success: false
+      });
+    }
     try {
-      const response = await authAPI.parent(name, email, phone, address);
+      const response = await authAPI.parent(name, email, phone, address, gender, image, userId);
       return response;
     } catch (error) {
       return rejectWithValue(error.message || 'Parent register failed');
+    }
+  }
+);
+
+export const getParent = createAsyncThunk(
+  'auth/getParent',
+  async (userId, { rejectWithValue }) => {
+    try {
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+      const response = await authAPI.getParent(userId);
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to fetch parent data');
+      }
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Failed to load parent data');
     }
   }
 );
@@ -364,6 +392,11 @@ const initialState = {
     loading: false,
     error: null,
     data: null
+  },
+  parentData: {
+    loading: false,
+    error: null,
+    data: null
   }
 };
 
@@ -381,6 +414,7 @@ const authSlice = createSlice({
       state.clinicVerification = null;
       state.veterinarianProfile = initialState.veterinarianProfile;
       state.bookingStatus = initialState.bookingStatus;
+      state.parentData = initialState.parentData;
     },
     clearError: (state) => {
       state.error = null;
@@ -439,6 +473,29 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
         state.isAuthenticated = false;
+      })
+
+      // Get Parent Data
+      .addCase(getParent.pending, (state) => {
+        state.parentData = {
+          loading: true,
+          error: null,
+          data: null
+        };
+      })
+      .addCase(getParent.fulfilled, (state, action) => {
+        state.parentData = {
+          loading: false,
+          error: null,
+          data: action.payload
+        };
+      })
+      .addCase(getParent.rejected, (state, action) => {
+        state.parentData = {
+          loading: false,
+          error: action.payload,
+          data: null
+        };
       })
 
       // Refresh Token
