@@ -1,7 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_BASE_URL = 'http://192.168.1.78:3000/api'; // Update thicd s to your backend URL
-// const API_BASE_URL = 'http://192.168.1.9:3000/api'; // Update thicd s to your backend URL
+// const API_BASE_URL = 'http://192.168.101.11:3000/api'; // Update thicd s to your backend URL
+const API_BASE_URL = 'http://10.42.55.232:3000/api'; // Update thicd s to your backend URL
+// const API_BASE_URL = 'http://192.168.1.5:3000/api'; // Update thicd s to your backend URL
+// const API_BASE_URL = 'http://192.168.218.57:3000/api'; // Update thicd s to your backend URL
 
 // Helper function to handle API responses
 const handleResponse = async (response) => {
@@ -200,6 +202,24 @@ export const authAPI = {
     }
   },
 
+  // Update Pet
+  updatePet: async (petId, petData) => {
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      if (!userId) throw new Error('User not authenticated');
+
+      return await apiRequest(`/auth/users/${userId}/pets/${petId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          ...petData
+        }),
+      });
+    } catch (error) {
+      console.error('Error updating pet:', error);
+      throw error;
+    }
+  },
+
   // Add to authAPI object in authService.js
   getPetsByUserId: async () => {
     try {
@@ -235,10 +255,6 @@ export const authAPI = {
       }),
     });
   },
-
-
-
-
 
   // Refresh Token
   refreshToken: async (refreshToken) => {

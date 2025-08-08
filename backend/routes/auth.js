@@ -88,7 +88,7 @@ router.delete('/parents/:id', deleteParent);
 router.post('/pet-register', createPet);
 router.post('/pets/user/:userId', getPetsByUserId);
 router.delete('/users/:userId/pets/:petId', deleteUserPet);
-router.patch('/users/:userId/pets/:petId',updateUserPet);
+router.patch('/users/:userId/pets/:petId', updateUserPet);
 router.post('/petparent/appointments/book', createAppointment);
 
 router.post('/veterinarian-register', registerVeterinarian);

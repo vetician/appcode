@@ -2,6 +2,9 @@ const Clinic = require('../models/Clinic');
 const Veterinarian = require('../models/Veterinarian');
 const Appointment = require('../models/Appointment');
 const { catchAsync } = require('../utils/catchAsync');
+
+
+
 const registerVeterinarian = catchAsync(async (req, res, next) => {
   const flatData = req.body;
   console.log(req.body)
