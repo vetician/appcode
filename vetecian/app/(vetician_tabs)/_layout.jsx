@@ -10,6 +10,7 @@ export default function Layout() {
       <Stack.Screen name="pages/ClinicListScreen" options={{ headerShown: false }} />
       <Stack.Screen name="pages/ClinicDetailScreen" options={{ headerShown: false, presentation: 'modal' }}/>
       <Stack.Screen name="pages/PetDetail" options={{ headerShown: false }}/>
+      <Stack.Screen name="pages/EditPetScreen" options={{ headerShown: false }}/>
     </Stack>
   );
 }

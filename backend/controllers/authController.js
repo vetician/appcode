@@ -177,13 +177,14 @@ const registerParent = catchAsync(async (req, res, next) => {
   });
 });
 
+// get parent by id
 const getParentById = catchAsync(async (req, res, next) => {
   const { userId } = req.params;
   console.log(userId);
 
   // Find parent by ID
-  const parent = await Parent.find({user : userId});
-  
+  const parent = await Parent.find({ user: userId });
+
   if (!parent) {
     return next(new AppError('Parent not found', 404));
   }
@@ -194,13 +195,14 @@ const getParentById = catchAsync(async (req, res, next) => {
   });
 });
 
+// update parent detail
 const updateParent = catchAsync(async (req, res, next) => {
   const { id } = req.params;
   const { name, email, phone, address, gender, image } = req.body;
 
   // Find parent by user ID
   const parent = await Parent.findOne({ user: id });
-  
+
   if (!parent) {
     return next(new AppError('Parent profile not found', 404));
   }
@@ -259,12 +261,13 @@ const updateParent = catchAsync(async (req, res, next) => {
   });
 });
 
+// delete parent
 const deleteParent = catchAsync(async (req, res, next) => {
   const { id } = req.params;
 
   // Find parent by ID and delete
   const parent = await Parent.findByIdAndDelete(id);
-  
+
   if (!parent) {
     return next(new AppError('Parent not found', 404));
   }
@@ -585,7 +588,7 @@ const getUnverifiedClinics = catchAsync(async (req, res, next) => {
 });
 
 // get verified clinics (admin)
-const getVerifiedClinics = catchAsync(async (req, res, next) => {   
+const getVerifiedClinics = catchAsync(async (req, res, next) => {
   const filter = { verified: true };
   if (req.query.city) filter.city = req.query.city;
   if (req.query.establishmentType) filter.establishmentType = req.query.establishmentType;
@@ -670,8 +673,8 @@ const getProfileDetails = catchAsync(async (req, res, next) => {
 
   // Find veterinarian and clinic data in parallel
   const [veterinarian, clinics] = await Promise.all([
-    Veterinarian.findOne({userId}),
-    Clinic.find({userId})
+    Veterinarian.findOne({ userId }),
+    Clinic.find({ userId })
   ]);
 
   // console.log(veterinarian, clinics)
@@ -753,8 +756,8 @@ const createPet = catchAsync(async (req, res, next) => {
 
 // registered pet info
 const getPetsByUserId = catchAsync(async (req, res, next) => {
-  const { userId } = req.params; 
-  console.log("getPetsByUserId =>",userId)
+  const { userId } = req.params;
+  console.log("getPetsByUserId =>", userId)
 
   if (!userId) {
     return next(new AppError('User ID is required', 400));
@@ -777,11 +780,13 @@ const getPetsByUserId = catchAsync(async (req, res, next) => {
   });
 });
 
+// update pet detail
 const updateUserPet = catchAsync(async (req, res, next) => {
   const { userId, petId } = req.params;
   const updates = req.body;
+  console.log(updates)
 
-  console.log(`updateUserPet => User: ${userId}, Pet: ${petId}`);
+  console.log(`Updating pet - User: ${userId}, Pet: ${petId}`);
 
   // Validate required IDs
   if (!userId || !petId) {
@@ -795,29 +800,83 @@ const updateUserPet = catchAsync(async (req, res, next) => {
     return next(new AppError('Pet not found for this user', 404));
   }
 
-  // Optional: List of allowed fields to update
-  const allowedUpdates = ['name', 'type', 'age', 'breed', 'vaccinationStatus'];
-  const isValidUpdate = Object.keys(updates).every(update => 
-    allowedUpdates.includes(update)
-  );
+  // List of allowed fields to update
+  const allowedUpdates = [
+    'name',
+    'species',
+    'breed',
+    'gender',
+    'dob',
+    'height',
+    'weight',
+    'color',
+    'image',
+    'medicalHistory',
+    'vaccinationStatus',
+    'specialNeeds',
+    'location',
+    'petPhoto',
+    'bloodGroup',
+    'distinctiveFeatures',
+    'allergies',
+    'currentMedications',
+    'chronicDiseases',
+    'injuries',
+    'surgeries',
+    'vaccinations',
+    'notes'
+  ];
 
-  if (!isValidUpdate) {
-    return next(new AppError('Invalid update fields', 400));
+  // Filter updates to only include allowed fields
+  const filteredUpdates = Object.keys(updates)
+    .filter(key => allowedUpdates.includes(key))
+    .reduce((obj, key) => {
+      obj[key] = updates[key];
+      return obj;
+    }, {});
+
+  // Validate date format if dob is being updated
+  if (filteredUpdates.dob) {
+    const isValidDate = (dateString) => {
+      const regEx = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateString.match(regEx)) return false;
+      const d = new Date(dateString);
+      return d instanceof Date && !isNaN(d);
+    };
+
+    if (!isValidDate(filteredUpdates.dob)) {
+      return next(new AppError('Invalid date format. Please use YYYY-MM-DD', 400));
+    }
   }
 
-  // Apply updates
-  Object.keys(updates).forEach(update => {
-    pet[update] = updates[update];
+  // Validate numeric fields
+  const numericFields = ['height', 'weight'];
+  numericFields.forEach(field => {
+    if (filteredUpdates[field]) {
+      filteredUpdates[field] = Number(filteredUpdates[field]);
+      if (isNaN(filteredUpdates[field])) {
+        return next(new AppError(`${field} must be a valid number`, 400));
+      }
+    }
   });
 
-  await pet.save();
+  // Apply updates
+  const updatedPet = await Pet.findByIdAndUpdate(
+    petId,
+    filteredUpdates,
+    { new: true, runValidators: true }
+  );
 
   res.status(200).json({
     success: true,
     message: 'Pet updated successfully',
-    pet: pet
+    data: {
+      pet: updatedPet
+    }
   });
 });
+
+// delete pet
 const deleteUserPet = catchAsync(async (req, res, next) => {
   const { userId, petId } = req.params;
 
@@ -841,6 +900,7 @@ const deleteUserPet = catchAsync(async (req, res, next) => {
     data: null
   });
 });
+
 // Refresh access token
 const refreshToken = catchAsync(async (req, res, next) => {
   const { refreshToken: token } = req.body;
@@ -920,16 +980,16 @@ const logoutAll = catchAsync(async (req, res, next) => {
 
 // pet resort detail
 const createPetResort = catchAsync(async (req, res, next) => {
-  const { 
+  const {
     userId,
-    resortName, 
-    brandName, 
-    address, 
-    resortPhone, 
-    ownerPhone, 
-    services, 
-    openingHours, 
-    notice 
+    resortName,
+    brandName,
+    address,
+    resortPhone,
+    ownerPhone,
+    services,
+    openingHours,
+    notice
   } = req.body;
   console.log(req.body);
 
@@ -1018,7 +1078,7 @@ const getUnverifiedPetResorts = catchAsync(async (req, res, next) => {
 // Get verified pet resorts (admin)
 const getVerifiedPetResorts = catchAsync(async (req, res, next) => {
   const filter = { isVerified: true };
-  
+
   // Add optional filters from query params
   if (req.query.city) filter.city = req.query.city;
   if (req.query.services) filter.services = { $in: req.query.services.split(',') };
@@ -1123,7 +1183,7 @@ const unverifyPetResort = catchAsync(async (req, res, next) => {
 const getAllClinicsWithVets = catchAsync(async (req, res, next) => {
   // 1. Fetch all verified clinics
   const clinics = await Clinic.find({ verified: true }).lean();
-  
+
   if (!clinics || clinics.length === 0) {
     return next(new AppError('No verified clinics found', 404));
   }
@@ -1132,20 +1192,20 @@ const getAllClinicsWithVets = catchAsync(async (req, res, next) => {
   const userIds = [...new Set(clinics.map(clinic => clinic.userId))];
 
   // 3. Fetch all veterinarians associated with these clinics
-  const veterinarians = await Veterinarian.find({ 
-    userId: { $in: userIds } 
+  const veterinarians = await Veterinarian.find({
+    userId: { $in: userIds }
   }).lean();
-  
+
   // 4. Create a map of userId -> veterinarian for quick lookup
   const vetMap = veterinarians.reduce((map, vet) => {
     map[vet.userId] = vet;
     return map;
   }, {});
-  
+
   // 5. Combine clinic and veterinarian data
   const responseData = clinics.map(clinic => {
     const vet = vetMap[clinic.userId] || null;
-    
+
     return {
       clinicDetails: {
         establishmentType: clinic.establishmentType,

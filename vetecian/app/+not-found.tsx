@@ -1,15 +1,22 @@
-import { Link, Stack } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Stack, useRouter } from 'expo-router';
+import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 
-export default function NotFoundScreen() {
+export default function ComingSoonScreen() {
+  const router = useRouter();
+
   return (
     <>
-      <Stack.Screen options={{ title: 'Oops!' }} />
+      <Stack.Screen options={{ title: 'Coming Soon!' }} />
       <View style={styles.container}>
-        <Text style={styles.text}>This screen doesn't exist.</Text>
-        <Link href="/" style={styles.link}>
-          <Text>Go to home screen!</Text>
-        </Link>
+        <Text style={styles.title}>This feature is yet to come</Text>
+        <Text style={styles.subtitle}>We're working hard to bring you this functionality soon!</Text>
+        
+        <TouchableOpacity 
+          style={styles.button} 
+          onPress={() => router.back()} // Go back to previous screen
+        >
+          <Text style={styles.buttonText}>Go back</Text>
+        </TouchableOpacity>
       </View>
     </>
   );
@@ -21,13 +28,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
+    backgroundColor: '#f8f9fa',
   },
-  text: {
-    fontSize: 20,
-    fontWeight: 600,
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+    color: '#333',
   },
-  link: {
+  subtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    color: '#666',
+    marginBottom: 30,
+    maxWidth: 300,
+  },
+  button: {
     marginTop: 15,
-    paddingVertical: 15,
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: '600',
   },
 });
