@@ -1,378 +1,10 @@
-// import { useState } from 'react';
-// import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-// import { useRouter } from 'expo-router';
-// import { useDispatch, useSelector } from 'react-redux';
-// import { signUpUser } from '../../store/slices/authSlice';
-// import { validateEmail } from '../../utils/validation';
-// import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react-native';
-// import Onboarding from '../(vetician_tabs)/onboarding/onboarding_conf'
-
-// export default function SignUp() {
-//   const [formData, setFormData] = useState({
-//     name: '',
-//     email: '',
-//     password: '',
-//     confirmPassword: '',
-//   });
-//   const [showPassword, setShowPassword] = useState(false);
-//   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-//   const [errors, setErrors] = useState({});
-//   const [role, setRole] = useState('vetician'); // Default to 'vetician'
-
-//   const router = useRouter();
-//   const dispatch = useDispatch();
-//   const { isLoading, error } = useSelector(state => state.auth);
-
-//   const handleInputChange = (field, value) => {
-//     setFormData(prev => ({ ...prev, [field]: value }));
-//     // Clear error when user starts typing
-//     if (errors[field]) {
-//       setErrors(prev => ({ ...prev, [field]: null }));
-//     }
-//   };
-
-//   const handleSignUp = async () => {
-//     // Reset errors
-//     setErrors({});
-
-//     // Validation
-//     const newErrors = {};
-
-//     if (!formData.name.trim()) {
-//       newErrors.name = 'Full name is required';
-//     } else if (formData.name.trim().length < 2) {
-//       newErrors.name = 'Name must be at least 2 characters';
-//     }
-
-//     if (!formData.email.trim()) {
-//       newErrors.email = 'Email is required';
-//     } else if (!validateEmail(formData.email)) {
-//       newErrors.email = 'Please enter a valid email';
-//     }
-
-//     if (!formData.password.trim()) {
-//       newErrors.password = 'Password is required';
-//     } else if (formData.password.length < 6) {
-//       newErrors.password = 'Password must be at least 6 characters';
-//     }
-
-//     if (!formData.confirmPassword.trim()) {
-//       newErrors.confirmPassword = 'Please confirm your password';
-//     } else if (formData.password !== formData.confirmPassword) {
-//       newErrors.confirmPassword = 'Passwords do not match';
-//     }
-
-//     if (Object.keys(newErrors).length > 0) {
-//       setErrors(newErrors);
-//       return;
-//     }
-
-//     try {
-//       const result = await dispatch(signUpUser({
-//         name: formData.name.trim(),
-//         email: formData.email.trim(),
-//         password: formData.password,
-//         role
-//       })).unwrap();
-
-//       console.log("result : ", result)
-
-//       if (result.success) {
-//         Alert.alert(
-//           'Account Created',
-//           'Your account has been created successfully!',
-//           [{ text: 'OK', onPress: () => router.replace(role === 'veterinarian' ? '/(doc_tabs)/onboarding/onboarding_conf' : '/(vetician_tabs)/onboarding/onboarding_conf') }]
-//         );
-//       }
-//     } catch (error) {
-//       Alert.alert('Sign Up Failed', error || 'An error occurred during sign up');
-//     }
-//   };
-
-//   return (
-//     <KeyboardAvoidingView
-//       style={styles.container}
-//       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-//     >
-//       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-//         <View style={styles.content}>
-//           <View style={styles.header}>
-//             <Text style={styles.title}>Create Account</Text>
-//             <Text style={styles.subtitle}>Sign up to get started</Text>
-//           </View>
-
-//           <View style={styles.form}>
-//             <View style={styles.inputContainer}>
-//               <View style={styles.inputWrapper}>
-//                 <User size={20} color="#666" style={styles.inputIcon} />
-//                 <TextInput
-//                   style={[styles.input, errors.name && styles.inputError]}
-//                   placeholder="Full Name"
-//                   value={formData.name}
-//                   onChangeText={(value) => handleInputChange('name', value)}
-//                   autoCapitalize="words"
-//                   autoCorrect={false}
-//                 />
-//               </View>
-//               {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
-//             </View>
-
-//             <View style={styles.inputContainer}>
-//               <View style={styles.inputWrapper}>
-//                 <Mail size={20} color="#666" style={styles.inputIcon} />
-//                 <TextInput
-//                   style={[styles.input, errors.email && styles.inputError]}
-//                   placeholder="Email"
-//                   value={formData.email}
-//                   onChangeText={(value) => handleInputChange('email', value)}
-//                   keyboardType="email-address"
-//                   autoCapitalize="none"
-//                   autoCorrect={false}
-//                 />
-//               </View>
-//               {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
-//             </View>
-
-//             <View style={styles.inputContainer}>
-//               <View style={styles.inputWrapper}>
-//                 <Lock size={20} color="#666" style={styles.inputIcon} />
-//                 <TextInput
-//                   style={[styles.input, errors.password && styles.inputError]}
-//                   placeholder="Password"
-//                   value={formData.password}
-//                   onChangeText={(value) => handleInputChange('password', value)}
-//                   secureTextEntry={!showPassword}
-//                   autoCapitalize="none"
-//                 />
-//                 <TouchableOpacity
-//                   style={styles.eyeButton}
-//                   onPress={() => setShowPassword(!showPassword)}
-//                 >
-//                   {showPassword ? (
-//                     <EyeOff size={20} color="#666" />
-//                   ) : (
-//                     <Eye size={20} color="#666" />
-//                   )}
-//                 </TouchableOpacity>
-//               </View>
-//               {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
-//             </View>
-
-//             <View style={styles.inputContainer}>
-//               <View style={styles.inputWrapper}>
-//                 <Lock size={20} color="#666" style={styles.inputIcon} />
-//                 <TextInput
-//                   style={[styles.input, errors.confirmPassword && styles.inputError]}
-//                   placeholder="Confirm Password"
-//                   value={formData.confirmPassword}
-//                   onChangeText={(value) => handleInputChange('confirmPassword', value)}
-//                   secureTextEntry={!showConfirmPassword}
-//                   autoCapitalize="none"
-//                 />
-//                 <TouchableOpacity
-//                   style={styles.eyeButton}
-//                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-//                 >
-//                   {showConfirmPassword ? (
-//                     <EyeOff size={20} color="#666" />
-//                   ) : (
-//                     <Eye size={20} color="#666" />
-//                   )}
-//                 </TouchableOpacity>
-//               </View>
-//               {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
-//             </View>
-
-//             {error && (
-//               <View style={styles.errorContainer}>
-//                 <Text style={styles.errorText}>{error}</Text>
-//               </View>
-//             )}
-
-//             <View style={styles.roleContainer}>
-//               <View style={styles.roleButtons}>
-//                 <TouchableOpacity
-//                   style={[styles.roleButton, role === 'vetician' && styles.roleButtonActive]}
-//                   onPress={() => setRole('vetician')}
-//                 >
-//                   <Text style={[styles.roleButtonText, role === 'vetician' && styles.roleButtonTextActive]}>
-//                     Vetician
-//                   </Text>
-//                 </TouchableOpacity>
-//                 <TouchableOpacity
-//                   style={[styles.roleButton, role === 'veterinarian' && styles.roleButtonActive]}
-//                   onPress={() => setRole('veterinarian')}
-//                 >
-//                   <Text style={[styles.roleButtonText, role === 'veterinarian' && styles.roleButtonTextActive]}>
-//                     Veterinarian
-//                   </Text>
-//                 </TouchableOpacity>
-//               </View>
-//             </View>
-
-//             <TouchableOpacity
-//               style={[styles.signUpButton, isLoading && styles.buttonDisabled]}
-//               onPress={handleSignUp}
-//               disabled={isLoading}
-//             >
-//               <Text style={styles.signUpButtonText}>
-//                 {isLoading ? 'Creating Account...' : 'Create Account'}
-//               </Text>
-//             </TouchableOpacity>
-
-//             <View style={styles.signInContainer}>
-//               <Text style={styles.signInText}>Already have an account? </Text>
-//               <TouchableOpacity onPress={() => router.back()}>
-//                 <Text style={styles.signInLink}>Sign In</Text>
-//               </TouchableOpacity>
-//             </View>
-//           </View>
-//         </View>
-//       </ScrollView>
-//     </KeyboardAvoidingView>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: '#f8f9fa',
-//   },
-//   scrollContent: {
-//     flexGrow: 1,
-//   },
-//   content: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     paddingHorizontal: 32,
-//     paddingVertical: 24,
-//   },
-//   header: {
-//     alignItems: 'center',
-//     marginBottom: 48,
-//   },
-//   title: {
-//     fontSize: 32,
-//     fontWeight: 'bold',
-//     color: '#1a1a1a',
-//     marginBottom: 8,
-//   },
-//   subtitle: {
-//     fontSize: 16,
-//     color: '#666',
-//   },
-//   form: {
-//     width: '100%',
-//   },
-//   inputContainer: {
-//     marginBottom: 24,
-//   },
-//   inputWrapper: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     backgroundColor: '#fff',
-//     borderRadius: 12,
-//     borderWidth: 1,
-//     borderColor: '#e1e5e9',
-//     paddingHorizontal: 16,
-//     height: 56,
-//   },
-//   inputIcon: {
-//     marginRight: 12,
-//   },
-//   input: {
-//     flex: 1,
-//     fontSize: 16,
-//     color: '#1a1a1a',
-//   },
-//   inputError: {
-//     borderColor: '#ff3b30',
-//   },
-//   eyeButton: {
-//     padding: 4,
-//   },
-//   errorContainer: {
-//     marginTop: 8,
-//     marginBottom: 16,
-//   },
-//   errorText: {
-//     color: '#ff3b30',
-//     fontSize: 14,
-//     marginTop: 8,
-//   },
-//   roleContainer: {
-//     marginBottom: 24,
-//   },
-//   roleLabel: {
-//     fontSize: 16,
-//     color: '#666',
-//     marginBottom: 8,
-//   },
-//   roleButtons: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     gap: 12,
-//   },
-//   roleButton: {
-//     flex: 1,
-//     paddingVertical: 12,
-//     borderRadius: 8,
-//     borderWidth: 1,
-//     borderColor: '#e1e5e9',
-//     alignItems: 'center',
-//     backgroundColor: '#fff',
-//   },
-//   roleButtonActive: {
-//     backgroundColor: '#007AFF',
-//     borderColor: '#007AFF',
-//   },
-//   roleButtonText: {
-//     fontSize: 16,
-//     color: '#666',
-//   },
-//   roleButtonTextActive: {
-//     color: '#fff',
-//     fontWeight: '600',
-//   },
-//   signUpButton: {
-//     backgroundColor: '#007AFF',
-//     borderRadius: 12,
-//     height: 56,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     marginTop: 8,
-//   },
-//   buttonDisabled: {
-//     backgroundColor: '#a0a0a0',
-//   },
-//   signUpButtonText: {
-//     color: '#fff',
-//     fontSize: 18,
-//     fontWeight: '600',
-//   },
-//   signInContainer: {
-//     flexDirection: 'row',
-//     justifyContent: 'center',
-//     marginTop: 32,
-//   },
-//   signInText: {
-//     fontSize: 16,
-//     color: '#666',
-//   },
-//   signInLink: {
-//     fontSize: 16,
-//     color: '#007AFF',
-//     fontWeight: '600',
-//   },
-// });
-
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { signUpUser } from '../../store/slices/authSlice';
 import { validateEmail } from '../../utils/validation';
-import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react-native';
+import { Eye, EyeOff, Mail, Lock, User, PawPrint } from 'lucide-react-native';
 
 export default function SignUp() {
   const [formData, setFormData] = useState({
@@ -384,7 +16,7 @@ export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
-  const [role, setRole] = useState('vetician'); // Default to 'vetician'
+  const [loginType, setLoginType] = useState('vetician'); // Default to 'vetician'
 
   const router = useRouter();
   const dispatch = useDispatch();
@@ -439,7 +71,7 @@ export default function SignUp() {
         name: formData.name.trim(),
         email: formData.email.trim(),
         password: formData.password,
-        role
+        role: loginType
       })).unwrap();
 
       if (result.success) {
@@ -449,8 +81,8 @@ export default function SignUp() {
           [{ 
             text: 'OK', 
             onPress: () => {
-              // Route to appropriate onboarding based on role
-              switch(role) {
+              // Route to appropriate onboarding based on login type
+              switch(loginType) {
                 case 'veterinarian':
                   router.replace('/(doc_tabs)/onboarding/onboarding_conf');
                   break;
@@ -480,6 +112,10 @@ export default function SignUp() {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
           <View style={styles.header}>
+            <View style={styles.logoContainer}>
+              <PawPrint size={40} color="#4A90E2" style={styles.logo} />
+              <Text style={styles.appName}>Vetician</Text>
+            </View>
             <Text style={styles.title}>Create Account</Text>
             <Text style={styles.subtitle}>Sign up to get started</Text>
           </View>
@@ -487,10 +123,11 @@ export default function SignUp() {
           <View style={styles.form}>
             <View style={styles.inputContainer}>
               <View style={styles.inputWrapper}>
-                <User size={20} color="#666" style={styles.inputIcon} />
+                <User size={20} color="#888" style={styles.inputIcon} />
                 <TextInput
                   style={[styles.input, errors.name && styles.inputError]}
                   placeholder="Full Name"
+                  placeholderTextColor="#aaa"
                   value={formData.name}
                   onChangeText={(value) => handleInputChange('name', value)}
                   autoCapitalize="words"
@@ -502,10 +139,11 @@ export default function SignUp() {
 
             <View style={styles.inputContainer}>
               <View style={styles.inputWrapper}>
-                <Mail size={20} color="#666" style={styles.inputIcon} />
+                <Mail size={20} color="#888" style={styles.inputIcon} />
                 <TextInput
                   style={[styles.input, errors.email && styles.inputError]}
                   placeholder="Email"
+                  placeholderTextColor="#aaa"
                   value={formData.email}
                   onChangeText={(value) => handleInputChange('email', value)}
                   keyboardType="email-address"
@@ -518,10 +156,11 @@ export default function SignUp() {
 
             <View style={styles.inputContainer}>
               <View style={styles.inputWrapper}>
-                <Lock size={20} color="#666" style={styles.inputIcon} />
+                <Lock size={20} color="#888" style={styles.inputIcon} />
                 <TextInput
                   style={[styles.input, errors.password && styles.inputError]}
                   placeholder="Password"
+                  placeholderTextColor="#aaa"
                   value={formData.password}
                   onChangeText={(value) => handleInputChange('password', value)}
                   secureTextEntry={!showPassword}
@@ -532,9 +171,9 @@ export default function SignUp() {
                   onPress={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <EyeOff size={20} color="#666" />
+                    <EyeOff size={20} color="#888" />
                   ) : (
-                    <Eye size={20} color="#666" />
+                    <Eye size={20} color="#888" />
                   )}
                 </TouchableOpacity>
               </View>
@@ -543,10 +182,11 @@ export default function SignUp() {
 
             <View style={styles.inputContainer}>
               <View style={styles.inputWrapper}>
-                <Lock size={20} color="#666" style={styles.inputIcon} />
+                <Lock size={20} color="#888" style={styles.inputIcon} />
                 <TextInput
                   style={[styles.input, errors.confirmPassword && styles.inputError]}
                   placeholder="Confirm Password"
+                  placeholderTextColor="#aaa"
                   value={formData.confirmPassword}
                   onChangeText={(value) => handleInputChange('confirmPassword', value)}
                   secureTextEntry={!showConfirmPassword}
@@ -557,9 +197,9 @@ export default function SignUp() {
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
                   {showConfirmPassword ? (
-                    <EyeOff size={20} color="#666" />
+                    <EyeOff size={20} color="#888" />
                   ) : (
-                    <Eye size={20} color="#666" />
+                    <Eye size={20} color="#888" />
                   )}
                 </TouchableOpacity>
               </View>
@@ -572,40 +212,69 @@ export default function SignUp() {
               </View>
             )}
 
-            <View style={styles.roleContainer}>
-              <View style={styles.roleButtons}>
+            <Text style={styles.loginTypeLabel}>I am a:</Text>
+            <View style={styles.loginTypeContainer}>
+              <View style={styles.loginTypeButtons}>
                 <TouchableOpacity
-                  style={[styles.roleButton, role === 'vetician' && styles.roleButtonActive]}
-                  onPress={() => setRole('vetician')}
+                  style={[
+                    styles.loginTypeButton,
+                    loginType === 'vetician' && styles.loginTypeButtonActive
+                  ]}
+                  onPress={() => setLoginType('vetician')}
                 >
-                  <Text style={[styles.roleButtonText, role === 'vetician' && styles.roleButtonTextActive]}>
+                  <PawPrint size={16} color={loginType === 'vetician' ? '#fff' : '#666'} />
+                  <Text style={[
+                    styles.loginTypeText,
+                    loginType === 'vetician' && styles.loginTypeTextActive
+                  ]}>
                     Pet Parent
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.roleButton, role === 'veterinarian' && styles.roleButtonActive]}
-                  onPress={() => setRole('veterinarian')}
+                  style={[
+                    styles.loginTypeButton,
+                    loginType === 'veterinarian' && styles.loginTypeButtonActive
+                  ]}
+                  onPress={() => setLoginType('veterinarian')}
                 >
-                  <Text style={[styles.roleButtonText, role === 'veterinarian' && styles.roleButtonTextActive]}>
-                    Vet
+                  <PawPrint size={16} color={loginType === 'veterinarian' ? '#fff' : '#666'} />
+                  <Text style={[
+                    styles.loginTypeText,
+                    loginType === 'veterinarian' && styles.loginTypeTextActive
+                  ]}>
+                    Veterinarian
                   </Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.roleButton, role === 'peravet' && styles.roleButtonActive]}
-                  onPress={() => setRole('peravet')}
+                {/* <TouchableOpacity
+                  style={[
+                    styles.loginTypeButton,
+                    loginType === 'peravet' && styles.loginTypeButtonActive
+                  ]}
+                  onPress={() => setLoginType('peravet')}
                 >
-                  <Text style={[styles.roleButtonText, role === 'peravet' && styles.roleButtonTextActive]}>
+                  <PawPrint size={16} color={loginType === 'peravet' ? '#fff' : '#666'} />
+                  <Text style={[
+                    styles.loginTypeText,
+                    loginType === 'peravet' && styles.loginTypeTextActive
+                  ]}>
                     Peravet
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.roleButton, role === 'pet_resort' && styles.roleButtonActive]}
-                  onPress={() => setRole('pet_resort')}
+                  style={[
+                    styles.loginTypeButton,
+                    loginType === 'pet_resort' && styles.loginTypeButtonActive
+                  ]}
+                  onPress={() => setLoginType('pet_resort')}
                 >
-                  <Text style={[styles.roleButtonText, role === 'pet_resort' && styles.roleButtonTextActive]}>
+                  <PawPrint size={16} color={loginType === 'pet_resort' ? '#fff' : '#666'} />
+                  <Text style={[
+                    styles.loginTypeText,
+                    loginType === 'pet_resort' && styles.loginTypeTextActive
+                  ]}>
                     Pet Resort
                   </Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
               </View>
             </View>
 
@@ -635,7 +304,8 @@ export default function SignUp() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#fff',
+    paddingTop: 35
   },
   scrollContent: {
     flexGrow: 1,
@@ -643,36 +313,60 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 32,
-    paddingVertical: 24,
+    paddingHorizontal: 30,
+    paddingBottom: 40,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: 40,
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  logo: {
+    marginRight: 10,
+  },
+  appName: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#4A90E2',
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
+    fontSize: 26,
+    fontWeight: '600',
+    color: '#333',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: '#888',
   },
   form: {
     width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   inputContainer: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#f8f9fa',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e1e5e9',
+    borderColor: '#eaeaea',
     paddingHorizontal: 16,
     height: 56,
   },
@@ -682,10 +376,11 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#1a1a1a',
+    color: '#333',
+    height: '100%',
   },
   inputError: {
-    borderColor: '#ff3b30',
+    borderColor: '#ff6b6b',
   },
   eyeButton: {
     padding: 4,
@@ -695,52 +390,71 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   errorText: {
-    color: '#ff3b30',
+    color: '#ff6b6b',
     fontSize: 14,
     marginTop: 8,
   },
-  roleContainer: {
-    marginBottom: 24,
+  loginTypeContainer: {
+    marginBottom: 20,
   },
-  roleButtons: {
+  loginTypeLabel: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 12,
+    fontWeight: '500',
+  },
+  loginTypeButtons: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 8,
+    gap: 10,
   },
-  roleButton: {
+  loginTypeButton: {
     flex: 1,
     minWidth: '48%',
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e1e5e9',
+    borderColor: '#eaeaea',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#f8f9fa',
     marginBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
   },
-  roleButtonActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+  loginTypeButtonActive: {
+    backgroundColor: '#4A90E2',
+    borderColor: '#4A90E2',
   },
-  roleButtonText: {
+  loginTypeText: {
     fontSize: 14,
     color: '#666',
+    fontWeight: '500',
   },
-  roleButtonTextActive: {
+  loginTypeTextActive: {
     color: '#fff',
     fontWeight: '600',
   },
   signUpButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#4A90E2',
     borderRadius: 12,
     height: 56,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 10,
+    shadowColor: '#4A90E2',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
   buttonDisabled: {
     backgroundColor: '#a0a0a0',
+    shadowColor: '#a0a0a0',
   },
   signUpButtonText: {
     color: '#fff',
@@ -750,15 +464,15 @@ const styles = StyleSheet.create({
   signInContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 32,
+    marginTop: 24,
   },
   signInText: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 15,
+    color: '#888',
   },
   signInLink: {
-    fontSize: 16,
-    color: '#007AFF',
+    fontSize: 15,
+    color: '#4A90E2',
     fontWeight: '600',
   },
 });

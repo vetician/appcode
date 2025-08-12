@@ -23,21 +23,6 @@ export default function AppDrawer() {
                 component={Home}
                 options={{ headerShown: false, title: 'Dassboard' }}
             />
-            <Drawer.Screen
-                name="Veterinarian Detail"
-                component={Veterinarian}
-                options={{ headerShown: false, title: 'Veterinarian Detail' }}
-            />
-            <Drawer.Screen
-                name="Clinic"
-                component={Clinic}
-                options={{ headerShown: false, title: 'Clinic' }}
-            />
-            <Drawer.Screen
-                name="VeterianrianScreen"
-                component={VeterinarianScreen}
-                options={{ headerShown: false, title: 'Profile Screen' }}
-            />
         </Drawer.Navigator>
     );
 }

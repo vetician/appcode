@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // const API_BASE_URL = 'http://192.168.101.11:3000/api'; // Update thicd s to your backend URL
-const API_BASE_URL = 'http://192.168.1.5:3000/api'; // Update thicd s to your backend URL
+const API_BASE_URL = 'http://10.42.55.232:3000/api'; // Update thicd s to your backend URL
 // const API_BASE_URL = 'http://192.168.1.5:3000/api'; // Update thicd s to your backend URL
 // const API_BASE_URL = 'http://192.168.218.57:3000/api'; // Update thicd s to your backend URL
 

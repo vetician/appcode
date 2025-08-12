@@ -1,130 +1,373 @@
+// import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+// import AsyncStorage from '@react-native-async-storage/async-storage';
+// import { Stethoscope, Clock, CalendarDays, Menu, Plus } from 'lucide-react-native';
+// import { DrawerActions, useNavigation } from '@react-navigation/native';
+// import { useDispatch } from 'react-redux';
+// import { checkVeterinarianVerification } from '../../../store/slices/authSlice';
+
+// export default function AddClinic() {
+//   const navigation = useNavigation();
+//   const dispatch = useDispatch();
+
+//   const openDrawer = () => {
+//     navigation.dispatch(DrawerActions.openDrawer());
+//   };
+
+//   const handleClinic = async () => {
+//     try {
+//       const userId = await AsyncStorage.getItem('userId');
+//       if (!userId) {
+//         Alert.alert('Error', 'User not authenticated');
+//         return;
+//       }
+
+//       const resultAction = await dispatch(checkVeterinarianVerification()).unwrap();
+//       const { isVerified, message } = resultAction;
+
+//       if (isVerified) {
+//         Alert.alert(
+//           'Verified',
+//           message || 'Your account is verified',
+//           [
+//             {
+//               text: 'Cancel',
+//               style: 'cancel',
+//             },
+//             {
+//               text: 'Continue',
+//               onPress: () => navigation.navigate('onboarding/addclinicform'),
+//             }
+//           ]
+//         );
+//       } else {
+//         Alert.alert(
+//           'Verification Required',
+//           message || 'Your account is not yet verified. Please complete verification first.',
+//           [
+//             {
+//               text: 'OK',
+//               // onPress: () => navigation.navigate('VerificationStatus'),
+//             }
+//           ]
+//         );
+//       }
+//     } catch (error) {
+//       Alert.alert('Error', error.message || 'Failed to check verification status');
+//     }
+//   };
+
+//   return (
+//     <View style={styles.container}>
+//       {/* Header */}
+//       <View style={styles.header}>
+//         <TouchableOpacity onPress={openDrawer} style={styles.menuButton}>
+//           <Menu size={28} color="#333" />
+//         </TouchableOpacity>
+//         <Text style={styles.headerTitle}>Add Your Clinic</Text>
+//         <View style={styles.headerSpacer} />
+//       </View>
+
+//       {/* Main Content */}
+//       <View style={styles.content}>
+//         <View style={styles.card}>
+//           <View style={styles.iconCircle}>
+//             <Plus size={32} color="#fff" />
+//           </View>
+          
+//           <Text style={styles.title}>Register Your Veterinary Clinic</Text>
+//           <Text style={styles.subtitle}>
+//             Join our network of professional veterinarians
+//           </Text>
+          
+//           <View style={styles.divider} />
+          
+//           <Text style={styles.description}>
+//             Add your clinic to start managing appointments, staff, and services with our comprehensive tools.
+//           </Text>
+          
+//           <View style={styles.featuresContainer}>
+//             <View style={styles.featureItem}>
+//               <View style={[styles.featureIcon, { backgroundColor: '#E3F2FD' }]}>
+//                 <Clock size={20} color="#1976D2" />
+//               </View>
+//               <Text style={styles.featureText}>Manage clinic hours and availability</Text>
+//             </View>
+            
+//             <View style={styles.featureItem}>
+//               <View style={[styles.featureIcon, { backgroundColor: '#E8F5E9' }]}>
+//                 <CalendarDays size={20} color="#388E3C" />
+//               </View>
+//               <Text style={styles.featureText}>Set up services and pricing</Text>
+//             </View>
+            
+//             <View style={styles.featureItem}>
+//               <View style={[styles.featureIcon, { backgroundColor: '#F3E5F5' }]}>
+//                 <Stethoscope size={20} color="#8E24AA" />
+//               </View>
+//               <Text style={styles.featureText}>Manage staff and permissions</Text>
+//             </View>
+//           </View>
+//         </View>
+        
+//         <TouchableOpacity
+//           style={styles.primaryButton}
+//           onPress={handleClinic}
+//           activeOpacity={0.9}
+//         >
+//           <Text style={styles.buttonText}>Add New Clinic</Text>
+//         </TouchableOpacity>
+//       </View>
+//     </View>
+//   );
+// }
+
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     backgroundColor: '#fff',
+//   },
+//   header: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'space-between',
+//     padding: 20,
+//     paddingTop: 50,
+//     backgroundColor: '#fff',
+//     borderBottomWidth: 1,
+//     borderBottomColor: '#f0f0f0',
+//   },
+//   menuButton: {
+//     padding: 4,
+//   },
+//   headerTitle: {
+//     fontSize: 22,
+//     fontWeight: '700',
+//     color: '#333',
+//   },
+//   headerSpacer: {
+//     width: 28,
+//   },
+//   content: {
+//     flex: 1,
+//     padding: 20,
+//   },
+//   card: {
+//     backgroundColor: '#fff',
+//     borderRadius: 16,
+//     padding: 24,
+//     marginBottom: 20,
+//     shadowColor: '#000',
+//     shadowOffset: { width: 0, height: 2 },
+//     shadowOpacity: 0.08,
+//     shadowRadius: 8,
+//     elevation: 3,
+//     alignItems: 'center',
+//   },
+//   iconCircle: {
+//     width: 64,
+//     height: 64,
+//     borderRadius: 32,
+//     backgroundColor: '#4285F4',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     marginBottom: 16,
+//   },
+//   title: {
+//     fontSize: 22,
+//     fontWeight: '700',
+//     color: '#333',
+//     marginBottom: 8,
+//     textAlign: 'center',
+//   },
+//   subtitle: {
+//     fontSize: 16,
+//     color: '#666',
+//     textAlign: 'center',
+//     marginBottom: 20,
+//   },
+//   divider: {
+//     height: 1,
+//     width: '100%',
+//     backgroundColor: '#f0f0f0',
+//     marginVertical: 16,
+//   },
+//   description: {
+//     fontSize: 16,
+//     color: '#555',
+//     textAlign: 'center',
+//     marginBottom: 24,
+//     lineHeight: 24,
+//   },
+//   featuresContainer: {
+//     width: '100%',
+//     gap: 16,
+//   },
+//   featureItem: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     gap: 12,
+//     padding: 12,
+//     borderRadius: 12,
+//     backgroundColor: '#fafafa',
+//   },
+//   featureIcon: {
+//     width: 40,
+//     height: 40,
+//     borderRadius: 20,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   featureText: {
+//     fontSize: 15,
+//     color: '#444',
+//     flex: 1,
+//     fontWeight: '500',
+//   },
+//   primaryButton: {
+//     backgroundColor: '#4285F4',
+//     padding: 18,
+//     borderRadius: 12,
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     shadowColor: '#4285F4',
+//     shadowOffset: { width: 0, height: 4 },
+//     shadowOpacity: 0.3,
+//     shadowRadius: 8,
+//     elevation: 5,
+//   },
+//   buttonText: {
+//     color: '#fff',
+//     fontSize: 18,
+//     fontWeight: '600',
+//   },
+// });
+
+
+
+
+
+
+
+
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Stethoscope, Clock, CalendarDays, Menu, Plus } from 'lucide-react-native';
-import { DrawerActions, useNavigation } from '@react-navigation/native';
+import { Stethoscope, Clock, CalendarDays, ArrowLeft, Plus } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useDispatch } from 'react-redux';
-import { checkVeterinarianVerification } from '../../../store/slices/authSlice'; // Adjust path as needed
+import { checkVeterinarianVerification } from '../../../store/slices/authSlice';
 
 export default function AddClinic() {
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
-  const openDrawer = () => {
-    navigation.dispatch(DrawerActions.openDrawer());
+  const handleGoBack = () => {
+    navigation.goBack();
   };
 
   const handleClinic = async () => {
     try {
-      console.log('[handleClinic] Starting verification check process...');
-
       const userId = await AsyncStorage.getItem('userId');
-      console.log('[handleClinic] Retrieved userId from AsyncStorage:', userId);
-
       if (!userId) {
-        console.error('[handleClinic] Error: No userId found - user not authenticated');
         Alert.alert('Error', 'User not authenticated');
         return;
       }
 
-      console.log('[handleClinic] Dispatching checkVeterinarianVerification action...');
       const resultAction = await dispatch(checkVeterinarianVerification()).unwrap();
-      console.log('[handleClinic] Action dispatch result:', resultAction);
+      const { isVerified, message } = resultAction;
 
-      // if (checkVeterinarianVerification.fulfilled.match(resultAction)) {
-        console.log('[handleClinic] Verification check successful');
-        const { isVerified, message } = resultAction;
-        console.log(`[handleClinic] Verification status - isVerified: ${isVerified}, message: ${message}`);
-
-        if (isVerified) {
-          console.log('[handleClinic] User is verified - showing success alert');
-          Alert.alert(
-            'Verified',
-            message || 'Your account is verified',
-            [
-              {
-                text: 'Cancel',
-                onPress: () => console.log('[handleClinic] User cancelled navigation to clinic form')
-              },
-              {
-                text: 'Continue',
-                onPress: () => {
-                  console.log('[handleClinic] Navigating to onboarding/addclinicform');
-                  navigation.navigate('onboarding/addclinicform');
-                }
-              }
-            ]
-          );
-        } else {
-          console.log('[handleClinic] User not verified - showing verification required alert');
-          Alert.alert(
-            'Not Verified',
-            message || 'Your account is not yet verified. Please complete verification first.',
-            [
-              {
-                text: 'OK',
-                onPress: () => {
-                  console.log('[handleClinic] Navigating to VerificationStatus screen');
-                  // navigation.navigate('VerificationStatus');
-                }
-              }
-            ]
-          );
-        }
-      // } else if (checkVeterinarianVerification.rejected.match(resultAction)) {
-      //   console.error('[handleClinic] Verification check failed:', resultAction.error);
-      //   throw new Error(resultAction.error.message || 'Verification check failed');
-      // }
+      if (isVerified) {
+        Alert.alert(
+          'Verified',
+          message || 'Your account is verified',
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel',
+            },
+            {
+              text: 'Continue',
+              onPress: () => navigation.navigate('onboarding/addclinicform'),
+            }
+          ]
+        );
+      } else {
+        Alert.alert(
+          'Verification Required',
+          message || 'Your account is not yet verified. Please complete verification first.',
+          [
+            {
+              text: 'OK',
+              // onPress: () => navigation.navigate('VerificationStatus'),
+            }
+          ]
+        );
+      }
     } catch (error) {
-      console.error('[handleClinic] Error in verification process:', {
-        error: error.message,
-        stack: error.stack
-      });
-      Alert.alert(
-        'Error',
-        error.message || 'Failed to check verification status'
-      );
+      Alert.alert('Error', error.message || 'Failed to check verification status');
     }
   };
 
   return (
     <View style={styles.container}>
-      {/* Header with Menu Button */}
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={openDrawer} style={styles.menuButton}>
-          <Menu size={24} color="#1a1a1a" />
+        <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
+          <ArrowLeft size={28} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Add Your Clinic</Text>
+        <View style={styles.headerSpacer} />
       </View>
 
-      <View style={styles.infoCard}>
-        <Plus size={32} color="#007AFF" style={styles.icon} />
-        <Text style={styles.title}>Register Your Veterinary Clinic</Text>
-        <Text style={styles.description}>
-          Add your clinic to start managing appointments, staff, and services.
-        </Text>
-
-        <View style={styles.features}>
-          <View style={styles.featureItem}>
-            <Clock size={20} color="#34C759" />
-            <Text style={styles.featureText}>Manage clinic hours and availability</Text>
+      {/* Main Content */}
+      <View style={styles.content}>
+        <View style={styles.card}>
+          <View style={styles.iconCircle}>
+            <Plus size={32} color="#fff" />
           </View>
-          <View style={styles.featureItem}>
-            <CalendarDays size={20} color="#FF9500" />
-            <Text style={styles.featureText}>Set up services and pricing</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <Stethoscope size={20} color="#007AFF" />
-            <Text style={styles.featureText}>Manage staff and permissions</Text>
+          
+          <Text style={styles.title}>Register Your Veterinary Clinic</Text>
+          <Text style={styles.subtitle}>
+            Join our network of professional veterinarians
+          </Text>
+          
+          <View style={styles.divider} />
+          
+          <Text style={styles.description}>
+            Add your clinic to start managing appointments, staff, and services with our comprehensive tools.
+          </Text>
+          
+          <View style={styles.featuresContainer}>
+            <View style={styles.featureItem}>
+              <View style={[styles.featureIcon, { backgroundColor: '#E3F2FD' }]}>
+                <Clock size={20} color="#1976D2" />
+              </View>
+              <Text style={styles.featureText}>Manage clinic hours and availability</Text>
+            </View>
+            
+            <View style={styles.featureItem}>
+              <View style={[styles.featureIcon, { backgroundColor: '#E8F5E9' }]}>
+                <CalendarDays size={20} color="#388E3C" />
+              </View>
+              <Text style={styles.featureText}>Set up services and pricing</Text>
+            </View>
+            
+            <View style={styles.featureItem}>
+              <View style={[styles.featureIcon, { backgroundColor: '#F3E5F5' }]}>
+                <Stethoscope size={20} color="#8E24AA" />
+              </View>
+              <Text style={styles.featureText}>Manage staff and permissions</Text>
+            </View>
           </View>
         </View>
+        
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={handleClinic}
+          activeOpacity={0.9}
+        >
+          <Text style={styles.buttonText}>Add New Clinic</Text>
+        </TouchableOpacity>
       </View>
-
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={handleClinic}
-      >
-        <Text style={styles.buttonText}>Add New Clinic</Text>
-      </TouchableOpacity>
     </View>
   );
 }
@@ -132,83 +375,120 @@ export default function AddClinic() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 24,
-    paddingTop: 60,
+    justifyContent: 'space-between',
+    padding: 20,
+    paddingTop: 50,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e1e5e9',
+    borderBottomColor: '#f0f0f0',
   },
-  menuButton: {
-    marginRight: 20,
+  backButton: {
+    padding: 4,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#333',
   },
-  infoCard: {
+  headerSpacer: {
+    width: 28,
+  },
+  content: {
+    flex: 1,
+    padding: 20,
+  },
+  card: {
     backgroundColor: '#fff',
     borderRadius: 16,
     padding: 24,
-    margin: 24,
-    marginTop: 16,
-    borderWidth: 1,
-    borderColor: '#e1e5e9',
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
     alignItems: 'center',
   },
-  icon: {
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#4285F4',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 16,
   },
   title: {
     fontSize: 22,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginBottom: 12,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 8,
     textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  divider: {
+    height: 1,
+    width: '100%',
+    backgroundColor: '#f0f0f0',
+    marginVertical: 16,
   },
   description: {
     fontSize: 16,
-    color: '#666',
+    color: '#555',
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 24,
   },
-  features: {
+  featuresContainer: {
     width: '100%',
     gap: 16,
-    marginTop: 16,
   },
   featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: '#fafafa',
+  },
+  featureIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   featureText: {
-    fontSize: 14,
-    color: '#1a1a1a',
+    fontSize: 15,
+    color: '#444',
     flex: 1,
+    fontWeight: '500',
   },
-  addButton: {
-    backgroundColor: '#007AFF',
-    padding: 16,
+  primaryButton: {
+    backgroundColor: '#4285F4',
+    padding: 18,
     borderRadius: 12,
     alignItems: 'center',
-    marginHorizontal: 24,
-    marginTop: 16,
-    shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    justifyContent: 'center',
+    shadowColor: '#4285F4',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   buttonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
 });
