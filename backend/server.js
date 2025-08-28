@@ -72,7 +72,7 @@ app.get('/api/health', (req, res) => {
 
 // Root endpoint
 app.get('/', (req, res) => {
-  res.send("Hello aditya!!");
+  res.send("Hello World!!");
 });
 
 // 404 handler
