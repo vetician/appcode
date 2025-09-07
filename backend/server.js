@@ -91,14 +91,14 @@ app.use(errorHandler);
  * On Vercel, you must NOT call app.listen()
  * because Vercel provides its own server runtime.
  * So we comment this out:
- * 
- * const PORT = process.env.PORT || 3000;
- * app.listen(PORT, () => {
- *   console.log(`🚀 Server running on port ${PORT}`);
- *   console.log(`📱 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:8081'}`);
- *   console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
- * });
- */
+*/
+ 
+ const PORT = process.env.PORT || 3000;
+ app.listen(PORT, () => {
+   console.log(`🚀 Server running on port ${PORT}`);
+   console.log(`📱 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:8081'}`);
+   console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
+ });
 
 // Export for Vercel
 module.exports = app;
