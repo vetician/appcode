@@ -30,7 +30,8 @@ const {
   unverifyPetResort,
   getAllClinicsWithVets,
   createAppointment,
-  getPetsByUserId
+  getPetsByUserId,
+  deleteAccount
 } = require('../controllers/authController');
 const { auth, protect } = require('../middleware/auth');
 const { validate } = require('../middleware/validation');
@@ -79,6 +80,7 @@ const loginValidation = [
 // Routes
 router.post('/register', registerValidation, validate, register);
 router.post('/login', loginValidation, validate, login);
+router.post('/delete-account', deleteAccount);
 
 
 router.post('/parent-register', registerParent);

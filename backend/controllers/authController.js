@@ -80,6 +80,57 @@ const register = catchAsync(async (req, res, next) => {
   });
 });
 
+// Delete user account
+const deleteAccount = catchAsync(async (req, res, next) => {
+  const { email, password, loginType } = req.body;
+
+  // Validate required fields
+  if (!email || !password || !loginType) {
+    return next(new AppError('Email, password, and login type are required', 400));
+  }
+
+  // Validate login type
+  if (!['veterinarian', 'vetician', 'peravet', 'pet_resort'].includes(loginType)) {
+    return next(new AppError('Invalid login type specified', 400));
+  }
+
+  // Find user and include password for verification
+  const user = await User.findByEmailAndRole(email, loginType).select('+password');
+  if (!user) {
+    return next(new AppError('Invalid email or password', 401));
+  }
+
+  // Verify role matches login type
+  if (user.role !== loginType) {
+    return next(new AppError(`Please authenticate as ${user.role}`, 401));
+  }
+
+  // Verify password before deletion
+  const isPasswordValid = await user.comparePassword(password);
+  if (!isPasswordValid) {
+    return next(new AppError('Invalid email or password', 401));
+  }
+
+  // Soft delete the user (set isActive to false)
+  user.isActive = false;
+  user.deletedAt = new Date();
+  
+  // Clear refresh tokens
+  user.refreshTokens = [];
+  
+  await user.save();
+
+  res.json({
+    success: true,
+    message: 'Account deleted successfully',
+    data: {
+      userId: user._id,
+      email: user.email,
+      deletedAt: user.deletedAt
+    }
+  });
+});
+
 // Login user
 const login = catchAsync(async (req, res, next) => {
   const { email, password, loginType } = req.body;
@@ -1365,5 +1416,6 @@ module.exports = {
   unverifyPetResort,
   getAllClinicsWithVets,
   createAppointment,
-  getPetsByUserId
+  getPetsByUserId,
+  deleteAccount
 };
