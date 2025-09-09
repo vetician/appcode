@@ -81,6 +81,7 @@ const register = catchAsync(async (req, res, next) => {
 });
 
 // Delete user account
+// Delete user account and all associated data
 const deleteAccount = catchAsync(async (req, res, next) => {
   const { email, password, loginType } = req.body;
 
@@ -111,18 +112,45 @@ const deleteAccount = catchAsync(async (req, res, next) => {
     return next(new AppError('Invalid email or password', 401));
   }
 
-  // Soft delete the user (set isActive to false)
-  user.isActive = false;
-  user.deletedAt = new Date();
-  
-  // Clear refresh tokens
-  user.refreshTokens = [];
-  
-  await user.save();
+  const userId = user._id;
+
+  // Delete all associated data across all models
+  await Promise.all([
+    // Delete from Parent model
+    Parent.deleteMany({ userId: userId }),
+    
+    // Delete from Pet model
+    Pet.deleteMany({ userId: userId }),
+    
+    // Delete from Clinic model
+    Clinic.deleteMany({ userId: userId }),
+    
+    // Delete from Veterinarian model
+    Veterinarian.deleteMany({ userId: userId }),
+    
+    // Delete from PetResort model
+    PetResort.deleteMany({ userId: userId }),
+    
+    // Delete appointments where user is either the client or provider
+    Appointment.deleteMany({
+      $or: [
+        { clientId: userId },
+        { providerId: userId }
+      ]
+    }),
+    
+    // Soft delete the user (set isActive to false)
+    (async () => {
+      user.isActive = false;
+      user.deletedAt = new Date();
+      user.refreshTokens = [];
+      await user.save();
+    })()
+  ]);
 
   res.json({
     success: true,
-    message: 'Account deleted successfully',
+    message: 'Account and all associated data deleted successfully',
     data: {
       userId: user._id,
       email: user.email,
