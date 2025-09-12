@@ -34,8 +34,12 @@ const allowedOrigins = [
 ].filter(Boolean);
 
 // CORS
+// app.use(cors({
+//   origin: allowedOrigins,
+//   credentials: true,
+// }));
 app.use(cors({
-  origin: allowedOrigins,
+  origin: true,   // Reflects the request origin
   credentials: true,
 }));
 
