@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_BASE_URL = "https://admin.vetician.com/api";
+const API_BASE_URL = "https://appcode-lilac.vercel.app/api";
 
 // Helper function to handle API responses
 const handleResponse = async (response) => {

@@ -27,11 +27,12 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "4a4b77c3-ef9f-419e-96e1-d540b9db5623"
+        "projectId": "2f6fd0a7-08ec-4c5f-bc9a-c0492f373e64"
       }
     },
     "android": {
       "package": "com.aaditri1001.vetician"
-    }
+    },
+    "owner": "veticianadmin"
   }
 }
