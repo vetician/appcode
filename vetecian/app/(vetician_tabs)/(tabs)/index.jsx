@@ -2,7 +2,7 @@ import React from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import Home from '../pages/Home';
 import PetList from '../pages/PetList'
-import ParentDetail from '../onboarding/parent_detail'
+// import ParentDetail from '../onboarding/parent_detail'
 import ClinicListScreen from '../pages/ClinicListScreen';
 import HealthTipsScreen from '../pages/HealthTipsScreen'
 
