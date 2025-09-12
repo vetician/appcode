@@ -49,6 +49,26 @@ const sendErrorProd = (err, res) => {
   }
 };
 
+// const errorHandler = (err, req, res, next) => {
+//   err.statusCode = err.statusCode || 500;
+//   err.status = err.status || 'error';
+
+//   if (process.env.NODE_ENV === 'development') {
+//     sendErrorDev(err, res);
+//   } else {
+//     let error = { ...err };
+//     error.message = err.message;
+
+//     if (error.name === 'CastError') error = handleCastErrorDB(error);
+//     if (error.code === 11000) error = handleDuplicateFieldsDB(error);
+//     if (error.name === 'ValidationError') error = handleValidationErrorDB(error);
+//     if (error.name === 'JsonWebTokenError') error = handleJWTError();
+//     if (error.name === 'TokenExpiredError') error = handleJWTExpiredError();
+
+//     sendErrorProd(error, res);
+//   }
+// };
+
 const errorHandler = (err, req, res, next) => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
@@ -56,8 +76,13 @@ const errorHandler = (err, req, res, next) => {
   if (process.env.NODE_ENV === 'development') {
     sendErrorDev(err, res);
   } else {
-    let error = { ...err };
+    // Keep the original error object with its prototype
+    let error = Object.create(err);
+
+    // Explicitly copy useful properties
     error.message = err.message;
+    error.name = err.name;
+    error.code = err.code;
 
     if (error.name === 'CastError') error = handleCastErrorDB(error);
     if (error.code === 11000) error = handleDuplicateFieldsDB(error);
@@ -68,5 +93,6 @@ const errorHandler = (err, req, res, next) => {
     sendErrorProd(error, res);
   }
 };
+
 
 module.exports = { errorHandler };

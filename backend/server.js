@@ -10,7 +10,7 @@ const userRoutes = require('./routes/user');
 const parentRoutes = require('./routes/parentRoutes');
 const vetRoutes = require('./routes/vetRoutes');
 const resortRoutes = require('./routes/resortRoutes');
-// const { errorHandler } = require('./middleware/errorHandler');
+const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
 
@@ -88,7 +88,7 @@ app.use('*', (req, res) => {
 });
 
 // Error handler
-// app.use(errorHandler);
+app.use(errorHandler);
 
 /**
  * 🚨 IMPORTANT:
