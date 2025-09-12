@@ -26,18 +26,18 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // Allowed origins
-// const allowedOrigins = [
-//   process.env.FRONTENDAPP_URL,
-//   process.env.FRONTENDWEB_URL,
-//   'http://localhost:8081',
-//   'http://localhost:5173'
-// ].filter(Boolean);
+const allowedOrigins = [
+  process.env.FRONTENDAPP_URL,
+  process.env.FRONTENDWEB_URL,
+  'http://localhost:8081',
+  'http://localhost:5173'
+].filter(Boolean);
 
-// // CORS
-// app.use(cors({
-//   origin: allowedOrigins,
-//   credentials: true,
-// }));
+// CORS
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+}));
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
