@@ -34,14 +34,14 @@ const allowedOrigins = [
 ].filter(Boolean);
 
 // CORS
-// app.use(cors({
-//   origin: allowedOrigins,
-//   credentials: true,
-// }));
 app.use(cors({
-  origin: true,   // Reflects the request origin
+  origin: allowedOrigins,
   credentials: true,
 }));
+// app.use(cors({
+//   origin: true,   // Reflects the request origin
+//   credentials: true,
+// }));
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
