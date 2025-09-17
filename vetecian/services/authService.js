@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// const API_BASE_URL = "https://appcode-lilac.vercel.app/api";
-const API_BASE_URL = "http://192.168.101.10:3000/api";
+const API_BASE_URL = "https://appcode-lilac.vercel.app/api";
+// const API_BASE_URL = "http://192.168.101.10:3000/api";
 
 // Helper function to handle API responses
 const handleResponse = async (response) => {
