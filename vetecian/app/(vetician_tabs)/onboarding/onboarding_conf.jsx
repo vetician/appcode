@@ -1,10 +1,9 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Smile, Activity, Star, TrendingUp, Menu, ChevronRight } from 'lucide-react-native';
+import { Star, TrendingUp, Eye, ChevronRight } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 export default function VeticianProfileSetup() {
     const router = useRouter();
-
 
     const benefits = [
         {
@@ -24,6 +23,18 @@ export default function VeticianProfileSetup() {
         }
     ];
 
+    const ICONS = {
+        visibility: Eye,
+        consult: TrendingUp,
+        feedback: Star
+    };
+
+    const ICON_COLORS = {
+        visibility: '#00B0FF',
+        consult: '#34C759',
+        feedback: '#FF9500'
+    };
+
     return (
         <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
             <View style={styles.header}>
@@ -39,20 +50,21 @@ export default function VeticianProfileSetup() {
                 </Text>
 
                 <View style={styles.benefitsContainer}>
-                    {benefits.map((benefit, index) => (
-                        <View key={index} style={styles.benefitCard}>
-                            <View style={styles.benefitIcon}>
-                                {benefit.icon === 'visibility' && <Activity size={24} color="#00B0FF" />}
-                                {benefit.icon === 'consult' && <TrendingUp size={24} color="#34C759" />}
-                                {benefit.icon === 'feedback' && <Star size={24} color="#FF9500" />}
+                    {benefits.map((benefit, index) => {
+                        const IconComponent = ICONS[benefit.icon];
+                        return (
+                            <View key={index} style={styles.benefitCard}>
+                                <View style={styles.benefitIcon}>
+                                    {IconComponent && <IconComponent size={24} color={ICON_COLORS[benefit.icon]} />}
+                                </View>
+                                <View style={styles.benefitText}>
+                                    <Text style={styles.benefitTitle}>{benefit.title}</Text>
+                                    <Text style={styles.benefitDescription}>{benefit.description}</Text>
+                                </View>
+                                <ChevronRight size={20} color="#666" />
                             </View>
-                            <View style={styles.benefitText}>
-                                <Text style={styles.benefitTitle}>{benefit.title}</Text>
-                                <Text style={styles.benefitDescription}>{benefit.description}</Text>
-                            </View>
-                            <ChevronRight size={20} color="#666" />
-                        </View>
-                    ))}
+                        );
+                    })}
                 </View>
 
                 <TouchableOpacity style={styles.primaryButton} onPress={() => router.replace('/onboarding/parent_detail')}>
@@ -68,100 +80,20 @@ export default function VeticianProfileSetup() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#f8f9fa',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 24,
-        paddingTop: 60,
-        backgroundColor: '#fff',
-        borderBottomWidth: 1,
-        borderBottomColor: '#e1e5e9',
-    },
-    menuButton: {
-        marginRight: 20,
-    },
-    greeting: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#1a1a1a',
-        marginBottom: 4,
-    },
-    subtitle: {
-        fontSize: 16,
-        color: '#666',
-    },
-    contentContainer: {
-        padding: 24,
-    },
-    introText: {
-        fontSize: 16,
-        color: '#333',
-        lineHeight: 24,
-        marginBottom: 32,
-    },
-    benefitsContainer: {
-        marginBottom: 32,
-    },
-    benefitCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: '#e1e5e9',
-    },
-    benefitIcon: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: '#00B0FF20',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 16,
-    },
-    benefitText: {
-        flex: 1,
-    },
-    benefitTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#1a1a1a',
-        marginBottom: 4,
-    },
-    benefitDescription: {
-        fontSize: 14,
-        color: '#666',
-        lineHeight: 20,
-    },
-    primaryButton: {
-        backgroundColor: '#4CAF50',
-        borderRadius: 8,
-        padding: 16,
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    primaryButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    secondaryButton: {
-        backgroundColor: 'transparent',
-        borderRadius: 8,
-        padding: 16,
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#4CAF50',
-    },
-    secondaryButtonText: {
-        color: '#4CAF50',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
+    container: { flex: 1, backgroundColor: '#f8f9fa' },
+    header: { flexDirection: 'row', alignItems: 'center', padding: 24, paddingTop: 60, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e1e5e9' },
+    greeting: { fontSize: 24, fontWeight: 'bold', color: '#1a1a1a', marginBottom: 4 },
+    subtitle: { fontSize: 16, color: '#666' },
+    contentContainer: { padding: 24 },
+    introText: { fontSize: 16, color: '#333', lineHeight: 24, marginBottom: 32 },
+    benefitsContainer: { marginBottom: 32 },
+    benefitCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#e1e5e9' },
+    benefitIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#00B0FF20', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+    benefitText: { flex: 1 },
+    benefitTitle: { fontSize: 16, fontWeight: '600', color: '#1a1a1a', marginBottom: 4 },
+    benefitDescription: { fontSize: 14, color: '#666', lineHeight: 20 },
+    primaryButton: { backgroundColor: '#4CAF50', borderRadius: 8, padding: 16, alignItems: 'center', marginBottom: 16 },
+    primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+    secondaryButton: { backgroundColor: 'transparent', borderRadius: 8, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: '#4CAF50' },
+    secondaryButtonText: { color: '#4CAF50', fontSize: 16, fontWeight: 'bold' }
 });

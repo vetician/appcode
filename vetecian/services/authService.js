@@ -1,22 +1,43 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_BASE_URL = "https://appcode-lilac.vercel.app/api";
+// const API_BASE_URL = "https://appcode-lilac.vercel.app/api";
+const API_BASE_URL = "http://192.168.101.10:3000/api";
 
 // Helper function to handle API responses
 const handleResponse = async (response) => {
-  const data = await response.json();
-  console.log(data)
+  console.log('🌐 FRONTEND - API Response status:', response.status, response.statusText);
+  console.log('🌐 FRONTEND - API Response headers:', Object.fromEntries(response.headers.entries()));
+  
+  let data;
+  try {
+    data = await response.json();
+    console.log('📄 FRONTEND - API Response data:', data);
+  } catch (jsonError) {
+    console.log('❌ FRONTEND - Failed to parse JSON response:', jsonError);
+    console.log('📄 FRONTEND - Raw response:', await response.text());
+    throw new Error('Invalid JSON response from server');
+  }
 
   if (!response.ok) {
+    console.log('❌ FRONTEND - API Request failed with status:', response.status);
+    console.log('❌ FRONTEND - Error message:', data.message || 'An error occurred');
     throw new Error(data.message || 'An error occurred');
   }
 
+  console.log('✅ FRONTEND - API Request successful');
   return data;
 };
 
 // Helper function to make API requests
 const apiRequest = async (endpoint, options = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
+  
+  console.log('🚀 FRONTEND - Making API request to:', url);
+  console.log('📋 FRONTEND - Request options:', {
+    method: options.method || 'GET',
+    headers: options.headers,
+    body: options.body ? 'BODY_PROVIDED' : 'NO_BODY'
+  });
 
   const config = {
     headers: {
@@ -26,12 +47,31 @@ const apiRequest = async (endpoint, options = {}) => {
     ...options,
   };
 
+  if (options.body) {
+    try {
+      const bodyData = JSON.parse(options.body);
+      console.log('📤 FRONTEND - Request body data:', {
+        ...bodyData,
+        password: bodyData.password ? '***HIDDEN***' : undefined
+      });
+    } catch (e) {
+      console.log('📤 FRONTEND - Request body (raw):', options.body);
+    }
+  }
+
   try {
+    console.log('⏳ FRONTEND - Sending request...');
     const response = await fetch(url, config);
+    console.log('📨 FRONTEND - Response received');
     return await handleResponse(response);
   } catch (error) {
+    console.log('❌ FRONTEND - API Request error:', error);
+    console.log('❌ FRONTEND - Error name:', error.name);
+    console.log('❌ FRONTEND - Error message:', error.message);
+    
     // Handle network errors
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      console.log('🌐 FRONTEND - Network error detected');
       throw new Error('Network error. Please check your connection and try again.');
     }
     throw error;
@@ -41,18 +81,61 @@ const apiRequest = async (endpoint, options = {}) => {
 export const authAPI = {
   // Sign In
   signIn: async (email, password, loginType) => {
-    return await apiRequest('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password, loginType }),
+    console.log('🔐 FRONTEND - signIn called with params:', {
+      email: email,
+      password: password ? '***PROVIDED***' : 'MISSING',
+      loginType: loginType
     });
+    
+    try {
+      const result = await apiRequest('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password, loginType }),
+      });
+      
+      console.log('✅ FRONTEND - signIn successful:', {
+        success: result.success,
+        message: result.message,
+        hasUser: !!result.user,
+        hasToken: !!result.token,
+        userRole: result.user?.role
+      });
+      
+      return result;
+    } catch (error) {
+      console.log('❌ FRONTEND - signIn error:', error.message);
+      throw error;
+    }
   },
 
   // Sign Up
   signUp: async (name, email, password, role = 'user') => {
-    return await apiRequest('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ name, email, password, role }),
+    console.log('📝 FRONTEND - signUp called with params:', {
+      name: name,
+      email: email,
+      password: password ? '***PROVIDED***' : 'MISSING',
+      role: role
     });
+    
+    try {
+      const result = await apiRequest('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ name, email, password, role }),
+      });
+      
+      console.log('✅ FRONTEND - signUp successful:', {
+        success: result.success,
+        message: result.message,
+        hasUser: !!result.user,
+        hasToken: !!result.token,
+        userRole: result.user?.role
+      });
+      
+      return result;
+    } catch (error) {
+      console.log('❌ FRONTEND - signUp error:', error.message);
+      throw error;
+    }
   },
 
   // Parent register

@@ -18,7 +18,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { updatePet, getPetsByUserId } from '../../../store/slices/authSlice';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { X, Calendar, Camera } from 'lucide-react-native';
 

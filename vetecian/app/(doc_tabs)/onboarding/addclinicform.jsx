@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, TextInput, ScrollView, Modal, Platform, ActivityIndicator, Alert } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useDispatch } from 'react-redux';
 import { registerClinic } from '../../../store/slices/authSlice';
-import Home from '../../../components/veterinarian/home/Home'
+// import Home from '../../../components/veterinarian/home/Home'
 import { useRouter } from 'expo-router';
 
 // Cloudinary upload function

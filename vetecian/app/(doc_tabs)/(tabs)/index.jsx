@@ -1,9 +1,9 @@
-import React from 'react';
+// import React from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import Home from '../../../components/veterinarian/home/Home';
-import Veterinarian from '../onboarding/veterinarian_detail'
-import Clinic from '../onboarding/clinic'
-import VeterinarianScreen from '../profile_detail/veterinarian_screen';
+// import Veterinarian from '../onboarding/veterinarian_detail'
+// import Clinic from '../onboarding/clinic'
+// import VeterinarianScreen from '../profile_detail/veterinarian_screen';
 
 const Drawer = createDrawerNavigator();
 

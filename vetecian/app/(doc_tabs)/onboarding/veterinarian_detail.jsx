@@ -833,7 +833,7 @@
 
 
 
-import { React, useState } from 'react';
+import React, {useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
@@ -841,7 +841,7 @@ import { Camera, ChevronDown, Upload, File, X, ArrowLeft } from 'lucide-react-na
 import { veterinarianUser } from '../../../store/slices/authSlice';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export default function CreateProfile() {
   const router = useRouter();

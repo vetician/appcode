@@ -29,23 +29,41 @@ const generateTokens = (userId) => {
 
 // Register new user
 const register = catchAsync(async (req, res, next) => {
+  console.log('🔍 REGISTER API - Request started');
+  console.log('📝 REGISTER API - Request body:', req.body);
+  
   const { name, email, password, role = 'vetician' } = req.body;
-  console.log(req.body);
+  
+  console.log('📋 REGISTER API - Extracted data:', {
+    name: name ? name.trim() : name,
+    email: email ? email.toLowerCase().trim() : email,
+    password: password ? '***PROVIDED***' : 'MISSING',
+    role
+  });
 
   // Updated role validation
   if (role && !['veterinarian', 'vetician', 'peravet', 'pet_resort'].includes(role)) {
+    console.log('❌ REGISTER API - Invalid role specified:', role);
     return next(new AppError('Invalid role specified', 400));
   }
+  console.log('✅ REGISTER API - Valid role:', role);
 
   // Check if user already exists
+  console.log('🔍 REGISTER API - Checking for existing user with email:', email?.toLowerCase().trim(), 'and role:', role);
   const existingUser = await User.findOne({
     email: email.toLowerCase().trim(),
     role
   });
 
   if (existingUser) {
+    console.log('❌ REGISTER API - User already exists:', {
+      id: existingUser._id,
+      email: existingUser.email,
+      role: existingUser.role
+    });
     return next(new AppError(`User with this email already exists as a ${role}`, 400));
   }
+  console.log('✅ REGISTER API - No existing user found, proceeding with registration');
 
   // Create new user
   const user = new User({
@@ -54,21 +72,35 @@ const register = catchAsync(async (req, res, next) => {
     password,
     role
   });
-  console.log(user)
+  
+  console.log('👤 REGISTER API - Created user object:', {
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    hasPassword: !!user.password
+  });
 
+  console.log('💾 REGISTER API - Saving user to database...');
   await user.save();
+  console.log('✅ REGISTER API - User saved successfully with ID:', user._id);
 
   // Generate tokens
+  console.log('🎫 REGISTER API - Generating tokens...');
   const { accessToken, refreshToken } = generateTokens(user._id);
+  console.log('✅ REGISTER API - Tokens generated successfully');
 
   // Save refresh token to user
+  console.log('💾 REGISTER API - Saving refresh token to user...');
   user.refreshTokens.push({ token: refreshToken });
   await user.save();
+  console.log('✅ REGISTER API - Refresh token saved');
 
   // Update last login
+  console.log('📅 REGISTER API - Updating last login...');
   await user.updateLastLogin();
+  console.log('✅ REGISTER API - Last login updated');
 
-  res.status(201).json({
+  const response = {
     success: true,
     message: 'User registered successfully',
     user: {
@@ -77,7 +109,17 @@ const register = catchAsync(async (req, res, next) => {
     },
     token: accessToken,
     refreshToken,
+  };
+  
+  console.log('🎉 REGISTER API - Registration successful, sending response:', {
+    success: response.success,
+    message: response.message,
+    userId: response.user.id,
+    userRole: response.user.role,
+    hasToken: !!response.token
   });
+
+  res.status(201).json(response);
 });
 
 // Delete user account
@@ -161,47 +203,82 @@ const deleteAccount = catchAsync(async (req, res, next) => {
 
 // Login user
 const login = catchAsync(async (req, res, next) => {
+  console.log('🔍 LOGIN API - Request started');
+  console.log('📝 LOGIN API - Request body:', req.body);
+  
   const { email, password, loginType } = req.body;
-  console.log(req.body)
+  
+  console.log('🔑 LOGIN API - Extracted credentials:', {
+    email: email ? email.toLowerCase().trim() : email,
+    password: password ? '***PROVIDED***' : 'MISSING',
+    loginType
+  });
 
   // Updated to accept new roles
   if (!['veterinarian', 'vetician', 'peravet', 'pet_resort'].includes(loginType)) {
+    console.log('❌ LOGIN API - Invalid login type:', loginType);
     return next(new AppError('Invalid login type specified', 400));
   }
+  console.log('✅ LOGIN API - Valid login type:', loginType);
 
   // Find user and include password for comparison
+  console.log('🔍 LOGIN API - Searching for user with email:', email?.toLowerCase().trim(), 'and role:', loginType);
   const user = await User.findByEmailAndRole(email, loginType).select('+password');
+  
   if (!user) {
+    console.log('❌ LOGIN API - User not found with email:', email, 'and role:', loginType);
     return next(new AppError('Invalid email or password', 401));
   }
+  console.log('✅ LOGIN API - User found:', {
+    id: user._id,
+    email: user.email,
+    role: user.role,
+    isActive: user.isActive,
+    hasPassword: !!user.password
+  });
 
   // Verify role matches login type
   if (user.role !== loginType) {
+    console.log('❌ LOGIN API - Role mismatch. User role:', user.role, 'Login type:', loginType);
     return next(new AppError(`Please login as ${user.role}`, 401));
   }
+  console.log('✅ LOGIN API - Role matches login type');
 
   // Check if user is active
   if (!user.isActive) {
+    console.log('❌ LOGIN API - User account is inactive');
     return next(new AppError('Account has been deactivated', 401));
   }
+  console.log('✅ LOGIN API - User account is active');
 
   // Verify password
+  console.log('🔑 LOGIN API - Verifying password...');
   const isPasswordValid = await user.comparePassword(password);
+  console.log('🔑 LOGIN API - Password verification result:', isPasswordValid);
+  
   if (!isPasswordValid) {
+    console.log('❌ LOGIN API - Invalid password');
     return next(new AppError('Invalid email or password', 401));
   }
+  console.log('✅ LOGIN API - Password is valid');
 
   // Generate tokens
+  console.log('🎫 LOGIN API - Generating tokens...');
   const { accessToken, refreshToken } = generateTokens(user._id);
+  console.log('✅ LOGIN API - Tokens generated successfully');
 
   // Save refresh token to user
+  console.log('💾 LOGIN API - Saving refresh token to user...');
   user.refreshTokens.push({ token: refreshToken });
   await user.save();
+  console.log('✅ LOGIN API - Refresh token saved');
 
   // Update last login
+  console.log('📅 LOGIN API - Updating last login...');
   await user.updateLastLogin();
+  console.log('✅ LOGIN API - Last login updated');
 
-  res.json({
+  const response = {
     success: true,
     message: 'Login successful',
     user: {
@@ -210,7 +287,17 @@ const login = catchAsync(async (req, res, next) => {
     },
     token: accessToken,
     refreshToken,
+  };
+  
+  console.log('🎉 LOGIN API - Login successful, sending response:', {
+    success: response.success,
+    message: response.message,
+    userId: response.user.id,
+    userRole: response.user.role,
+    hasToken: !!response.token
   });
+
+  res.json(response);
 });
 
 // Register new parent

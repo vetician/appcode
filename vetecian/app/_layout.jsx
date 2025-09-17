@@ -7,6 +7,7 @@ import { useFrameworkReady } from '../hooks/useFrameworkReady';
 import { store, persistor } from '../store/store';
 import { View, Text, StyleSheet } from 'react-native';
 
+
 function LoadingScreen() {
   return (
     <View style={styles.loadingContainer}>

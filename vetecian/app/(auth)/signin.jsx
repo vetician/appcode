@@ -18,48 +18,96 @@ export default function SignIn() {
   const { isLoading, error } = useSelector(state => state.auth);
 
   const handleSignIn = async () => {
+    console.log('📱 LOGIN COMPONENT - handleSignIn started');
+    console.log('📱 LOGIN COMPONENT - Input values:', {
+      email: email,
+      password: password ? '***PROVIDED***' : 'MISSING',
+      loginType: loginType
+    });
+
     // Reset errors
     setErrors({});
+    console.log('📱 LOGIN COMPONENT - Errors reset');
 
     // Validation
+    console.log('📱 LOGIN COMPONENT - Starting validation...');
     const newErrors = {};
     if (!email.trim()) {
       newErrors.email = 'Email is required';
+      console.log('❌ LOGIN COMPONENT - Email validation failed: empty');
     } else if (!validateEmail(email)) {
       newErrors.email = 'Please enter a valid email';
+      console.log('❌ LOGIN COMPONENT - Email validation failed: invalid format');
+    } else {
+      console.log('✅ LOGIN COMPONENT - Email validation passed');
     }
 
     if (!password.trim()) {
       newErrors.password = 'Password is required';
+      console.log('❌ LOGIN COMPONENT - Password validation failed: empty');
     } else if (password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
+      console.log('❌ LOGIN COMPONENT - Password validation failed: too short');
+    } else {
+      console.log('✅ LOGIN COMPONENT - Password validation passed');
     }
 
     if (Object.keys(newErrors).length > 0) {
+      console.log('❌ LOGIN COMPONENT - Validation failed, errors:', newErrors);
       setErrors(newErrors);
       return;
     }
+    console.log('✅ LOGIN COMPONENT - All validations passed');
 
     try {
-      console.log('Login Page:=> ', email, password, loginType);
+      console.log('🚀 LOGIN COMPONENT - Dispatching signInUser action...');
+      console.log('📋 LOGIN COMPONENT - Dispatch params:', {
+        email: email,
+        password: password ? '***HIDDEN***' : 'MISSING',
+        loginType: loginType
+      });
+      
       const result = await dispatch(signInUser({ email, password, loginType })).unwrap();
+      
+      console.log('✅ LOGIN COMPONENT - signInUser dispatch successful');
+      console.log('📄 LOGIN COMPONENT - Result:', {
+        success: result.success,
+        message: result.message,
+        hasUser: !!result.user,
+        hasToken: !!result.token,
+        userRole: result.user?.role
+      });
+      
       if (result.success) {
+        console.log('🎉 LOGIN COMPONENT - Login successful, routing based on loginType:', loginType);
+        
         // Route to appropriate tabs based on login type
         switch(loginType) {
           case 'veterinarian':
+            console.log('🏥 LOGIN COMPONENT - Routing to veterinarian tabs');
             router.replace('/(doc_tabs)');
             break;
           case 'pet_resort':
+            console.log('🏨 LOGIN COMPONENT - Routing to pet resort tabs');
             router.replace('/(pet_resort_tabs)');
             break;
           case 'peravet':
+            console.log('🐕 LOGIN COMPONENT - Routing to peravet tabs');
             router.replace('/(peravet_tabs)');
             break;
           default: // vetician
+            console.log('👤 LOGIN COMPONENT - Routing to vetician tabs (default)');
             router.replace('/(vetician_tabs)');
         }
+      } else {
+        console.log('❌ LOGIN COMPONENT - Login failed, result.success is false');
       }
     } catch (error) {
+      console.log('❌ LOGIN COMPONENT - Caught error in handleSignIn:', error);
+      console.log('❌ LOGIN COMPONENT - Error type:', typeof error);
+      console.log('❌ LOGIN COMPONENT - Error message:', error.message || error);
+      console.log('❌ LOGIN COMPONENT - Full error object:', JSON.stringify(error, null, 2));
+      
       Alert.alert('Sign In Failed', error || 'An error occurred during sign in');
     }
   };

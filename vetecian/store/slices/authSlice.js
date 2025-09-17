@@ -6,11 +6,41 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export const signInUser = createAsyncThunk(
   'auth/signIn',
   async ({ email, password, loginType }, { rejectWithValue }) => {
+    console.log('🔄 REDUX - signInUser thunk started');
+    console.log('📋 REDUX - signInUser params:', {
+      email: email,
+      password: password ? '***PROVIDED***' : 'MISSING',
+      loginType: loginType
+    });
+    
     try {
+      console.log('🌐 REDUX - Calling authAPI.signIn...');
       const response = await authAPI.signIn(email, password, loginType);
-      await AsyncStorage.setItem('userId', response.user._id);
+      
+      console.log('✅ REDUX - authAPI.signIn successful');
+      console.log('📄 REDUX - API Response:', {
+        success: response.success,
+        message: response.message,
+        hasUser: !!response.user,
+        hasToken: !!response.token,
+        userId: response.user?._id,
+        userRole: response.user?.role
+      });
+      
+      if (response.user && response.user._id) {
+        console.log('💾 REDUX - Saving userId to AsyncStorage:', response.user._id);
+        await AsyncStorage.setItem('userId', response.user._id);
+        console.log('✅ REDUX - userId saved to AsyncStorage');
+      } else {
+        console.log('⚠️ REDUX - No user._id in response, cannot save to AsyncStorage');
+      }
+      
       return response;
     } catch (error) {
+      console.log('❌ REDUX - signInUser error:', error);
+      console.log('❌ REDUX - Error message:', error.message);
+      console.log('❌ REDUX - Error type:', typeof error);
+      
       return rejectWithValue(error.message || 'Sign in failed');
     }
   }
@@ -19,11 +49,42 @@ export const signInUser = createAsyncThunk(
 export const signUpUser = createAsyncThunk(
   'auth/signUp',
   async ({ name, email, password, role = 'vetician' }, { rejectWithValue }) => {
+    console.log('🔄 REDUX - signUpUser thunk started');
+    console.log('📋 REDUX - signUpUser params:', {
+      name: name,
+      email: email,
+      password: password ? '***PROVIDED***' : 'MISSING',
+      role: role
+    });
+    
     try {
+      console.log('🌐 REDUX - Calling authAPI.signUp...');
       const response = await authAPI.signUp(name, email, password, role);
-      await AsyncStorage.setItem('userId', response.user._id);
+      
+      console.log('✅ REDUX - authAPI.signUp successful');
+      console.log('📄 REDUX - API Response:', {
+        success: response.success,
+        message: response.message,
+        hasUser: !!response.user,
+        hasToken: !!response.token,
+        userId: response.user?._id,
+        userRole: response.user?.role
+      });
+      
+      if (response.user && response.user._id) {
+        console.log('💾 REDUX - Saving userId to AsyncStorage:', response.user._id);
+        await AsyncStorage.setItem('userId', response.user._id);
+        console.log('✅ REDUX - userId saved to AsyncStorage');
+      } else {
+        console.log('⚠️ REDUX - No user._id in response, cannot save to AsyncStorage');
+      }
+      
       return response;
     } catch (error) {
+      console.log('❌ REDUX - signUpUser error:', error);
+      console.log('❌ REDUX - Error message:', error.message);
+      console.log('❌ REDUX - Error type:', typeof error);
+      
       return rejectWithValue(error.message || 'Sign up failed');
     }
   }
